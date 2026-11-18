@@ -1,6 +1,6 @@
 /* Public endpoint only. No passwords, tokens, Sheets data or photo data. */
 window.REPORT_CONFIG = Object.freeze({
-  "endpoint": "https://script.google.com/macros/s/AKfycbzpQPNpk7eb7trr9Ud6-nidkQEfaVL34gArC75353xIyAsTKWcI1w3-2XJI5zbzT3Y/exec",
+  "endpoint": "https://script.google.com/macros/s/AKfycbyzRbicR1P6DQSDEWvlk4ZtLfFq0t-Bp1cz6PmO4zYlE0EY4iXAcH76ncZjWyPVDRxl/exec",
   "googleClientId": "944078371411-vnpflgssji1vrhqrlcf0d30mnthbb6t2.apps.googleusercontent.com",
   "version": "github-migration-3",
   "methods": [
