@@ -50,4 +50,6 @@ Pengujian lokal meliputi kesamaan sumber UI, ketiadaan token rahasia, sintaks se
 
 Tampilan aplikasi asli diperiksa di desktop 1440×1000 dan HP 390×844. Pengujian layar sempit pada browser internal adalah simulasi ukuran layar, bukan pengujian Safari/iPhone fisik.
 
-Login dan operasi Google langsung harus diuji lagi setelah ID klien serta deployment backend dikonfigurasi. Berkas migrasi saja tidak berarti seluruh koneksi langsung sudah aktif. Tindakan hapus permanen tidak dijalankan pada data nyata untuk pengujian.
+Login Google dan pembacaan data Sheets/Drive sudah diuji langsung pada 19 November 2026. Dashboard, daftar laporan, filter, editor tanpa menyimpan, galeri/foto dan perpindahan fokus diperiksa. Semua 18 pemeriksaan lokal lulus; ukuran layar 320–1440 px tidak meluap ke samping. Safari/iPhone fisik belum diuji. Tindakan menyimpan, mengubah dan menghapus laporan nyata tidak dijalankan untuk pengujian.
+
+Web GitHub memakai deployment terpisah versi 196. Dua link lama yang sempat diperbarui telah dikembalikan ke versi 194 dan 193; deployment lama lainnya tidak diubah, sesuai permintaan pemilik. Data laporan/foto dan izin berbagi Drive yang sudah ada tetap.
