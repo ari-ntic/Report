@@ -88,6 +88,7 @@
     });
   }
   window.ReportAuth.setValidator(token=>transport('getReportSession',[],token));
+  window.ReportAuth.setAccessTransport?.((method,args,token)=>transport(method,args,token));
   async function invoke(method,args){
     const token=await window.ReportAuth.token();
     try{return await transport(method,args,token);}

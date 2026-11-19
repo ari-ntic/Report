@@ -16,7 +16,7 @@ Data laporan tetap di Google Sheets dan foto tetap di Google Drive. Repositori i
 - config.js: alamat deployment dan ID klien Google yang memang bersifat publik. Bukan tempat menyimpan kata sandi/token.
 
 ## Akses
-Pemeriksaan akun harus diaktifkan di backend sebelum web digunakan. Tanpa konfigurasi login, halaman mengunci diri dan tidak mengambil data laporan. Izin admin/anggota diperiksa oleh Apps Script.
+Login Google aktif. Akun baru menekan Minta akses; administrator mendapat email dan menyetujui atau menolak melalui tombol Pengguna di aplikasi. Setelah disetujui, halaman pemohon memeriksa izin setiap 20 detik selama terbuka. Pemohon tidak dapat membaca laporan sebelum diizinkan. Admin juga dapat mencabut akses member. Izin selalu diperiksa lagi oleh Apps Script.
 
 ## Pembaruan
 Unggah perubahan ke cabang main. GitHub Pages menerbitkan dari root. Backend Apps Script diperbarui terpisah.

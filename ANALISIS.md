@@ -53,3 +53,6 @@ Tampilan aplikasi asli diperiksa di desktop 1440×1000 dan HP 390×844. Pengujia
 Login Google dan pembacaan data Sheets/Drive sudah diuji langsung pada 19 November 2026. Dashboard, daftar laporan, filter, editor tanpa menyimpan, galeri/foto dan perpindahan fokus diperiksa. Semua 18 pemeriksaan lokal lulus; ukuran layar 320–1440 px tidak meluap ke samping. Safari/iPhone fisik belum diuji. Tindakan menyimpan, mengubah dan menghapus laporan nyata tidak dijalankan untuk pengujian.
 
 Web GitHub memakai deployment terpisah versi 196. Dua link lama yang sempat diperbarui telah dikembalikan ke versi 194 dan 193; deployment lama lainnya tidak diubah, sesuai permintaan pemilik. Data laporan/foto dan izin berbagi Drive yang sudah ada tetap.
+
+## Permintaan akses (19 November 2026)
+Pengguna baru login Google, lalu menekan Minta akses. Identitas Google diverifikasi server, permintaan disimpan terpisah dari sheet laporan dan pemberitahuan dikirim ke admin. Admin menyetujui sebagai member, menolak atau mencabut akses melalui menu Pengguna. Pemohon menunggu tanpa akses laporan; persetujuan diperiksa setiap 20 detik selama halaman terlihat. Aksi admin memerlukan akun admin dan ID permintaan yang masih berlaku. Email tidak berisi tautan persetujuan langsung. Link lama tetap pada versi sebelumnya.
