@@ -7,10 +7,10 @@
     dialog=document.createElement('section');dialog.id='reportLogin';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','reportLoginTitle');
     dialog.style.cssText='position:fixed;inset:0;z-index:30000;background:#f8fafc;display:grid;place-items:center;padding:20px;font:15px/1.6 Inter,system-ui;color:#0f172a';
     const card=document.createElement('div');card.style.cssText='width:min(100%,420px);padding:28px;background:white;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 8px 24px #0f172a0d;text-align:center';
-    card.innerHTML='<h1 id="reportLoginTitle" style="font-size:20px;margin:0 0 12px">NTIC 報告記録</h1><p>許可されたGoogleアカウントでログインしてください。<br>Masuk dengan akun Google yang diizinkan.</p><div id="reportGoogleButton" style="display:flex;justify-content:center;min-height:44px"></div><p id="reportLoginMessage" role="status" style="font-size:13px;color:#64748b"></p><button id="reportLoginReload" type="button" hidden style="min-height:44px;margin:0 0 12px;padding:8px 16px">再読み込み / Muat ulang</button><br><a href="privacy.html" style="font-size:12px;color:#64748b">Privasi / Privacy</a>';
+    card.innerHTML='<h1 id="reportLoginTitle" style="font-size:20px;margin:0 0 12px">NTIC 報告記録</h1><p>Googleアカウントでログインしてください。初めての方はログイン後にアクセスを申請できます。<br>Sign in with Google. New users can request access after signing in.</p><div id="reportGoogleButton" style="display:flex;justify-content:center;min-height:44px"></div><p id="reportLoginMessage" role="status" style="font-size:13px;color:#64748b"></p><button id="reportLoginReload" type="button" hidden style="min-height:44px;margin:0 0 12px;padding:8px 16px">再読み込み / Reload</button><br><a href="privacy.html" style="font-size:12px;color:#64748b">プライバシー / Privacy</a>';
     card.querySelector('#reportLoginReload').onclick=()=>location.reload();
-    const request=document.createElement('button');request.id='reportRequestAccess';request.type='button';request.hidden=true;request.textContent='Minta akses / アクセス申請';request.style.cssText='min-height:44px;padding:10px 18px;margin:8px';
-    request.onclick=async()=>{request.disabled=true;try{const state=await accessTransport('requestReportAccess',[],pendingToken);showPending(state);if(state.notificationSent===false)message('Permintaan tersimpan. Email admin belum terkirim; coba tombol Minta akses lagi setelah 5 menit.');}catch(error){message(error.message,true);}finally{request.disabled=false;}};
+    const request=document.createElement('button');request.id='reportRequestAccess';request.type='button';request.hidden=true;request.textContent='アクセス申請 / Request access';request.style.cssText='min-height:44px;padding:10px 18px;margin:8px';
+    request.onclick=async()=>{request.disabled=true;try{const state=await accessTransport('requestReportAccess',[],pendingToken);showPending(state);if(state.notificationSent===false)message('申請は保存されましたが、管理者への通知を送信できませんでした。5分後にもう一度申請してください。 / Your request was saved, but the notification could not be sent. Try requesting again in 5 minutes.');}catch(error){message('アクセスを申請できませんでした。時間をおいて再度お試しいただくか、管理者にお問い合わせください。 / Could not request access. Try again later or contact the administrator.',true);}finally{request.disabled=false;}};
     card.querySelector('#reportLoginMessage').before(request);
     dialog.append(card);document.body.append(dialog);return dialog;
   }
@@ -18,7 +18,7 @@
   function lock(){token='';expires=0;pendingToken='';clearTimeout(pollTimer);document.getElementById('reportAccessAdminButton')?.remove();document.getElementById('reportAccessPanel')?.remove();const box=overlay();box.querySelector('#reportRequestAccess').hidden=true;box.hidden=false;box.style.display='grid';document.querySelector('.container')?.setAttribute('inert','');}
   function showPending(user){
     const request=overlay().querySelector('#reportRequestAccess');request.hidden=user.status==='rejected';
-    message(user.status==='rejected'?'Akses belum diizinkan. Hubungi admin.':user.status==='pending'?'Permintaan menunggu persetujuan admin. Halaman akan terbuka otomatis setelah diizinkan.':'Akun '+user.email+' belum mendapat izin. Tekan Minta akses untuk menghubungi admin.');
+    message(user.status==='rejected'?'アクセスは許可されていません。管理者にお問い合わせください。 / Access has not been granted. Please contact the administrator.':user.status==='pending'?'管理者の承認を待っています。承認後、自動的にアプリが開きます。 / Awaiting administrator approval. The app will open automatically once approved.':user.email+' のアクセスはまだ許可されていません。「アクセス申請」を押してください。 / This account is not yet authorized. Select Request access to contact the administrator.');
     clearTimeout(pollTimer);if(user.status==='pending')pollTimer=setTimeout(checkPending,20000);
   }
   async function checkPending(){
@@ -28,7 +28,7 @@
     try{await credential({credential:pendingToken});}finally{checking=false;}
   }
   async function credential(response){
-    message('ログインを確認しています… / Memeriksa akun…');
+    message('ログインを確認しています… / Verifying your account…');
     try{
       const user=await validator(response.credential);
       if(user.role==='pending'){token='';expires=0;pendingToken=response.credential;showPending(user);return;}
@@ -40,7 +40,7 @@
       document.getElementById('singleInput')?.focus();
       window.dispatchEvent(new CustomEvent('report-login',{detail:{email:user.email,role:user.role}}));
       if(user.role==='admin')adminButton();
-    }catch(error){token='';expires=0;clearTimeout(pollTimer);overlay().querySelector('#reportRequestAccess').hidden=true;message(error.message||'ログインできませんでした。 / Akun tidak diizinkan.',true);}
+    }catch(error){token='';expires=0;clearTimeout(pollTimer);overlay().querySelector('#reportRequestAccess').hidden=true;message('ログインを確認できませんでした。再読み込みして、もう一度ログインしてください。 / Could not verify your sign-in. Reload and sign in again.',true);}
   }
   function adminButton(){
     if(document.getElementById('reportAccessAdminButton'))return;
@@ -77,10 +77,10 @@
   function initialize(){
     lock();
     const id=window.REPORT_CONFIG?.googleClientId;
-    if(!id){message('Login Google belum diaktifkan. Data laporan tetap terkunci.',true);return;}
+    if(!id){message('Googleログインはまだ設定されていません。管理者にお問い合わせください。 / Google sign-in is not configured. Please contact the administrator.',true);return;}
     if(initializing)return;initializing=true;
     const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;
-    script.onerror=()=>{initializing=false;message('Google login tidak dapat dimuat. Muat ulang halaman.',true);};
+    script.onerror=()=>{initializing=false;message('Googleログインを読み込めませんでした。再読み込みしてください。 / Could not load Google sign-in. Please reload the page.',true);};
     script.onload=()=>{
       google.accounts.id.initialize({client_id:id,callback:credential,auto_select:false,ux_mode:'popup',itp_support:true});
       google.accounts.id.renderButton(document.getElementById('reportGoogleButton'),{theme:'outline',size:'large',text:'signin_with',shape:'rectangular'});
@@ -90,7 +90,7 @@
     setValidator(fn){validator=fn;},
     setAccessTransport(fn){accessTransport=fn;},
     token(){if(token&&expires>Date.now()+30000)return Promise.resolve(token);lock();return new Promise((resolve,reject)=>waiters.push({resolve,reject}));},
-    invalidate(){lock();message('ログインし直してください。 / Silakan login lagi.');},
+    invalidate(){lock();message('ログインし直してください。 / Please sign in again.');},
     signOut(){lock();google.accounts?.id?.disableAutoSelect();location.reload();}
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
