@@ -1,4 +1,3 @@
-
 /*
  * NTIC Report Login
  * Google Sign-In
@@ -16,16 +15,12 @@
   let pendingToken = '';
   let pollTimer;
   let checking = false;
+  let selectedCredential = '';
+  let selectedEmail = '';
 
-  const blockedStatuses = new Set([
-    'pending',
-    'rejected',
-    'revoked',
-    'deleted',
-    'inactive',
-    'unregistered',
-    'not_found'
-  ]);
+  // The server returns approved, pending, or none.
+  // Any other unauthorised status is treated as no access.
+  const allowedRoles = new Set(['admin', 'member']);
 
   // Loading dots animation
   function installLoadingStyle() {
@@ -36,17 +31,18 @@
 
     style.textContent = `
       @keyframes reportLoadingDots {
-        0%, 20% { content: "."; }
-        40% { content: ".."; }
-        60%, 100% { content: "..."; }
+        from { clip-path: inset(0 100% 0 0); }
+        to   { clip-path: inset(0 0 0 0); }
       }
-
       #reportLoginMessage.is-loading::after {
-        content: ".";
+        content: "...";
         display: inline-block;
-        min-width: 1.8em;
+        width: 3ch;
         text-align: left;
-        animation: reportLoadingDots 1.2s steps(1,end) infinite;
+        white-space: nowrap;
+        font-family: monospace;
+        vertical-align: bottom;
+        animation: reportLoadingDots 1.2s steps(3,end) infinite;
       }
     `;
 
@@ -145,9 +141,9 @@
           pendingToken
         );
 
-        showPending(state);
+        showPending(state || { status: 'pending' });
 
-        if (state.notificationSent === false) {
+        if (state?.notificationSent === false) {
           message(
             '申請は保存されましたが、管理者への通知を送信できませんでした。' +
             '5分後にもう一度申請してください。 / ' +
@@ -156,6 +152,7 @@
           );
         }
       } catch (error) {
+        console.error('NTIC access request failed:', error);
         message(
           'アクセスを申請できませんでした。時間をおいて再度お試しいただくか、' +
           '管理者にお問い合わせください。 / ' +
@@ -169,6 +166,54 @@
     };
 
     card.querySelector('#reportLoginMessage').before(request);
+
+    // The Google credential has a signed email; confirm the account
+    // before calling the server. The server still verifies the signature.
+    const accountChoice = document.createElement('div');
+    accountChoice.id = 'reportAccountChoice';
+    accountChoice.hidden = true;
+    accountChoice.style.cssText =
+      'margin:12px 0;padding:12px;border:1px solid #e2e8f0;' +
+      'border-radius:8px;overflow-wrap:anywhere';
+
+    const accountEmail = document.createElement('p');
+    accountEmail.id = 'reportChosenEmail';
+    accountEmail.style.cssText = 'font-weight:600;margin:0 0 10px';
+
+    const confirmAccount = document.createElement('button');
+    confirmAccount.type = 'button';
+    confirmAccount.textContent =
+      'このアカウントで続行 / Continue with this account';
+    confirmAccount.style.cssText =
+      'min-height:44px;padding:8px 12px;margin:4px';
+    confirmAccount.onclick = () => {
+      const chosen = selectedCredential;
+      selectedCredential = '';
+      accountChoice.hidden = true;
+      if (chosen) verifyCredential(chosen);
+    };
+
+    const changeAccount = document.createElement('button');
+    changeAccount.type = 'button';
+    changeAccount.textContent =
+      '別のアカウントを使用 / Use another account';
+    changeAccount.style.cssText =
+      'min-height:44px;padding:8px 12px;margin:4px';
+    changeAccount.onclick = () => {
+      selectedCredential = '';
+      selectedEmail = '';
+      accountChoice.hidden = true;
+      card.querySelector('#reportGoogleButton').hidden = false;
+      window.google?.accounts?.id?.disableAutoSelect();
+      window.google?.accounts?.id?.cancel?.();
+      message(
+        'Googleアカウントを選択してください。 / ' +
+        'Choose your Google account.'
+      );
+    };
+
+    accountChoice.append(accountEmail, confirmAccount, changeAccount);
+    card.querySelector('#reportGoogleButton').after(accountChoice);
 
     dialog.append(card);
     document.body.append(dialog);
@@ -190,6 +235,8 @@
     token = '';
     expires = 0;
     pendingToken = '';
+    selectedCredential = '';
+    selectedEmail = '';
 
     clearTimeout(pollTimer);
 
@@ -198,6 +245,8 @@
 
     const box = overlay();
     box.querySelector('#reportRequestAccess').hidden = true;
+    box.querySelector('#reportAccountChoice').hidden = true;
+    box.querySelector('#reportGoogleButton').hidden = false;
 
     box.hidden = false;
     box.style.display = 'grid';
@@ -206,34 +255,19 @@
   }
 
   function showPending(user) {
-    const request = overlay().querySelector('#reportRequestAccess');
+    const box = overlay();
+    const request = box.querySelector('#reportRequestAccess');
+    const status = String(user?.status || 'none').toLowerCase();
 
-    const status = String(user?.status || '').toLowerCase();
-
-    // Revoked, rejected and unregistered users may request again.
+    // One no-access message for new, rejected and revoked users.
     request.hidden = status === 'pending';
+    request.disabled = false;
 
     if (status === 'pending') {
       message(
         '管理者の承認を待っています。承認後、自動的にアプリが開きます。 / ' +
         'Awaiting administrator approval. The app will open ' +
         'automatically once approved.'
-      );
-    } else if (status === 'rejected') {
-      message(
-        'アクセスは許可されていません。再度アクセスを申請できます。 / ' +
-        'Access has not been granted. You can request access again.'
-      );
-    } else if (
-      status === 'revoked' ||
-      status === 'deleted' ||
-      status === 'inactive'
-    ) {
-      message(
-        '以前のアクセス権限は取り消されています。' +
-        '「アクセス申請」から再申請できます。 / ' +
-        'Your previous access was revoked. ' +
-        'Select Request access to apply again.'
       );
     } else {
       message(
@@ -246,7 +280,6 @@
     }
 
     clearTimeout(pollTimer);
-
     if (status === 'pending') {
       pollTimer = setTimeout(checkPending, 20000);
     }
@@ -254,104 +287,151 @@
 
   async function checkPending() {
     if (!pendingToken || checking) return;
-
     if (document.hidden) {
       pollTimer = setTimeout(checkPending, 20000);
       return;
     }
 
     checking = true;
-
     try {
-      await credential({ credential: pendingToken });
+      // Poll silently: do not reopen the account chooser every 20 seconds.
+      await verifyCredential(pendingToken, true);
     } finally {
       checking = false;
     }
   }
 
-  async function credential(response) {
-    message(
-      'ログインを確認しています / Verifying your account',
-      false,
-      true
-    );
+  function googlePayload(googleCredential) {
+    const parts = String(googleCredential || '').split('.');
+    if (parts.length !== 3) {
+      throw new Error('Invalid Google credential');
+    }
+    const base64 = parts[1]
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+    return JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')));
+  }
+
+  // Google returns the account that actually signed the credential.
+  // Display its email for confirmation before using it.
+  function credential(response) {
+    try {
+      const payload = googlePayload(response?.credential);
+      if (
+        !payload.email ||
+        typeof payload.email !== 'string' ||
+        !payload.exp ||
+        payload.exp * 1000 <= Date.now()
+      ) {
+        throw new Error('Expired or invalid Google credential');
+      }
+
+      selectedCredential = response.credential;
+      selectedEmail = payload.email.toLowerCase();
+
+      const box = overlay();
+      box.querySelector('#reportChosenEmail').textContent = payload.email;
+      box.querySelector('#reportAccountChoice').hidden = false;
+      box.querySelector('#reportGoogleButton').hidden = true;
+      box.querySelector('#reportRequestAccess').hidden = true;
+
+      message(
+        'このGoogleアカウントでよろしいですか？ / ' +
+        'Is this the correct Google account?'
+      );
+    } catch (error) {
+      console.error('Google credential error:', error);
+      selectedCredential = '';
+      selectedEmail = '';
+      message(
+        'ログインを確認できませんでした。再読み込みして、' +
+        'もう一度ログインしてください。 / ' +
+        'Could not verify your sign-in. Reload and sign in again.',
+        true
+      );
+    }
+  }
+
+  async function verifyCredential(googleCredential, background = false) {
+    if (!background) {
+      message(
+        'ログインを確認しています / Verifying your account',
+        false,
+        true
+      );
+    }
 
     try {
       if (typeof validator !== 'function') {
         throw new Error('Authentication validator is not configured');
       }
 
-      const user = await validator(response.credential);
+      const user = await validator(googleCredential);
+      const payload = googlePayload(googleCredential);
 
-      const status = String(user?.status || '').toLowerCase();
-      const authorizedRole =
-        user?.role === 'admin' || user?.role === 'member';
-
-      // Do not authorize revoked or pending accounts.
+      // The identity shown on screen must match Google's server-verified identity.
       if (
-        !authorizedRole ||
-        blockedStatuses.has(status)
+        !user ||
+        typeof user.email !== 'string' ||
+        user.email.toLowerCase() !== String(payload.email || '').toLowerCase()
       ) {
+        throw new Error('Google account mismatch');
+      }
+
+      const status = String(user.status || '').toLowerCase();
+      const authorized =
+        allowedRoles.has(user.role) &&
+        (status === 'approved' || status === '');
+
+      if (!authorized) {
         token = '';
         expires = 0;
-        pendingToken = response.credential;
-
+        pendingToken = googleCredential;
         showPending(user);
         return;
       }
 
-      pendingToken = '';
-      clearTimeout(pollTimer);
-
-      overlay().querySelector('#reportRequestAccess').hidden = true;
-
-      const body = JSON.parse(
-        atob(
-          response.credential
-            .split('.')[1]
-            .replace(/-/g, '+')
-            .replace(/_/g, '/')
-        )
-      );
-
-      if (!body.exp || body.exp * 1000 <= Date.now()) {
+      if (!payload.exp || payload.exp * 1000 <= Date.now()) {
         throw new Error('Google token expired');
       }
 
-      token = response.credential;
-      expires = body.exp * 1000;
+      pendingToken = '';
+      selectedCredential = '';
+      selectedEmail = '';
+      clearTimeout(pollTimer);
+      overlay().querySelector('#reportRequestAccess').hidden = true;
+      overlay().querySelector('#reportAccountChoice').hidden = true;
+
+      token = googleCredential;
+      expires = payload.exp * 1000;
 
       const box = overlay();
       box.hidden = true;
       box.style.display = 'none';
-
       document.querySelector('.container')?.removeAttribute('inert');
 
-      for (const job of waiters.splice(0)) {
-        job.resolve(token);
-      }
-
+      for (const job of waiters.splice(0)) job.resolve(token);
       document.getElementById('singleInput')?.focus();
 
       window.dispatchEvent(
         new CustomEvent('report-login', {
-          detail: {
-            email: user.email,
-            role: user.role
-          }
+          detail: { email: user.email, role: user.role }
         })
       );
-
-      if (user.role === 'admin') {
-        adminButton();
-      }
+      if (user.role === 'admin') adminButton();
     } catch (error) {
+      console.error('NTIC login verification failed:', error);
       token = '';
       expires = 0;
-
+      pendingToken = '';
+      selectedCredential = '';
+      selectedEmail = '';
       clearTimeout(pollTimer);
 
-      overlay().querySelector('#reportRequestAccess').hidden = true;
+      const box = overlay();
+      box.querySelector('#reportRequestAccess').hidden = true;
+      box.querySelector('#reportAccountChoice').hidden = true;
+      box.querySelector('#reportGoogleButton').hidden = false;
 
       message(
         'ログインを確認できませんでした。再読み込みして、' +
