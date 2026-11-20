@@ -1,10 +1,9 @@
 
 /*
- * NTIC REPORT LOGIN
- * Google Authentication
- * Re-registration support for revoked users
+ * NTIC Report Login
+ * Google Sign-In
+ * Original Japanese / English interface preserved.
  */
-
 (() => {
   'use strict';
 
@@ -12,112 +11,97 @@
   let expires = 0;
   let waiters = [];
   let validator;
-  let accessTransport;
   let initializing = false;
+  let accessTransport;
   let pendingToken = '';
   let pollTimer;
   let checking = false;
 
-  const REQUESTABLE = [
-    'unregistered',
-    'revoked',
+  const blockedStatuses = new Set([
+    'pending',
     'rejected',
-    'inactive',
+    'revoked',
     'deleted',
-    'not_found',
-    'not_registered',
-    'none'
-  ];
+    'inactive',
+    'unregistered',
+    'not_found'
+  ]);
 
-  function getStatus(user) {
-    const status = String(user?.status || '').toLowerCase();
+  // Loading dots animation
+  function installLoadingStyle() {
+    if (document.getElementById('reportLoadingStyle')) return;
 
-    if (status) return status;
-    if (user?.role === 'pending') return 'unregistered';
-    if (!user?.role) return 'unregistered';
+    const style = document.createElement('style');
+    style.id = 'reportLoadingStyle';
 
-    return 'approved';
-  }
+    style.textContent = `
+      @keyframes reportLoadingDots {
+        0%, 20% { content: "."; }
+        40% { content: ".."; }
+        60%, 100% { content: "..."; }
+      }
 
-  function isAuthorized(user) {
-    if (!user) return false;
+      #reportLoginMessage.is-loading::after {
+        content: ".";
+        display: inline-block;
+        min-width: 1.8em;
+        text-align: left;
+        animation: reportLoadingDots 1.2s steps(1,end) infinite;
+      }
+    `;
 
-    const role = user.role;
-    const status = getStatus(user);
-
-    return (
-      (role === 'admin' || role === 'member') &&
-      !REQUESTABLE.includes(status) &&
-      status !== 'pending'
-    );
+    document.head.appendChild(style);
   }
 
   function overlay() {
     let dialog = document.getElementById('reportLogin');
-
     if (dialog) return dialog;
+
+    installLoadingStyle();
 
     dialog = document.createElement('section');
     dialog.id = 'reportLogin';
-
     dialog.setAttribute('role', 'dialog');
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('aria-labelledby', 'reportLoginTitle');
 
-    dialog.style.cssText = `
-      position:fixed;
-      inset:0;
-      z-index:30000;
-      background:#f8fafc;
-      display:grid;
-      place-items:center;
-      padding:20px;
-      font:15px/1.6 Inter,system-ui;
-      color:#0f172a;
-    `;
+    dialog.style.cssText =
+      'position:fixed;inset:0;z-index:30000;background:#f8fafc;' +
+      'display:grid;place-items:center;padding:20px;' +
+      'font:15px/1.6 Inter,system-ui;color:#0f172a';
 
     const card = document.createElement('div');
-
-    card.style.cssText = `
-      width:min(100%,420px);
-      padding:28px;
-      background:white;
-      border:1px solid #e2e8f0;
-      border-radius:14px;
-      box-shadow:0 8px 24px #0f172a0d;
-      text-align:center;
-    `;
+    card.style.cssText =
+      'width:min(100%,420px);padding:28px;background:white;' +
+      'border:1px solid #e2e8f0;border-radius:14px;' +
+      'box-shadow:0 8px 24px #0f172a0d;text-align:center';
 
     card.innerHTML = `
       <h1 id="reportLoginTitle"
           style="font-size:20px;margin:0 0 12px">
         NTIC 報告記録
       </h1>
-
       <p>
         Googleアカウントでログインしてください。
+        初めての方はログイン後にアクセスを申請できます。
         <br>
-        Sign in with Google.
+        Sign in with Google. New users can request
+        access after signing in.
       </p>
-
       <div id="reportGoogleButton"
            style="display:flex;justify-content:center;min-height:44px">
       </div>
-
       <p id="reportLoginMessage"
          role="status"
          style="font-size:13px;color:#64748b">
       </p>
-
       <button id="reportLoginReload"
               type="button"
               hidden
               style="min-height:44px;margin:0 0 12px;padding:8px 16px">
         再読み込み / Reload
       </button>
-
       <br>
-
       <a href="privacy.html"
          style="font-size:12px;color:#64748b">
         プライバシー / Privacy
@@ -128,22 +112,19 @@
       () => location.reload();
 
     const request = document.createElement('button');
-
     request.id = 'reportRequestAccess';
     request.type = 'button';
     request.hidden = true;
     request.textContent = 'アクセス申請 / Request access';
 
-    request.style.cssText = `
-      min-height:44px;
-      padding:10px 18px;
-      margin:8px;
-    `;
+    request.style.cssText =
+      'min-height:44px;padding:10px 18px;margin:8px';
 
     request.onclick = async () => {
       if (!pendingToken || typeof accessTransport !== 'function') {
         message(
-          'Login terlebih dahulu atau hubungi admin.',
+          'ログインを確認できませんでした。再読み込みしてください。 / ' +
+          'Could not verify your sign-in. Please reload.',
           true
         );
         return;
@@ -152,30 +133,34 @@
       request.disabled = true;
 
       try {
+        message(
+          'アクセスを申請しています / Requesting access',
+          false,
+          true
+        );
+
         const state = await accessTransport(
           'requestReportAccess',
           [],
           pendingToken
         );
 
-        showPending(state || {
-          role: 'pending',
-          status: 'pending'
-        });
+        showPending(state);
 
-        if (state?.notificationSent === false) {
+        if (state.notificationSent === false) {
           message(
-            'Permintaan sudah tersimpan, tetapi notifikasi admin gagal dikirim. ' +
-            'Hubungi admin untuk pemeriksaan.'
+            '申請は保存されましたが、管理者への通知を送信できませんでした。' +
+            '5分後にもう一度申請してください。 / ' +
+            'Your request was saved, but the notification could not ' +
+            'be sent. Try requesting again in 5 minutes.'
           );
         }
-
       } catch (error) {
-        console.error('Request access error:', error);
-
         message(
-          'Gagal mengajukan akses. ' +
-          'Coba lagi atau hubungi administrator.',
+          'アクセスを申請できませんでした。時間をおいて再度お試しいただくか、' +
+          '管理者にお問い合わせください。 / ' +
+          'Could not request access. Try again later or contact ' +
+          'the administrator.',
           true
         );
       } finally {
@@ -191,10 +176,13 @@
     return dialog;
   }
 
-  function message(text, retry = false) {
+  function message(text, retry = false, loading = false) {
     const box = overlay();
+    const element = box.querySelector('#reportLoginMessage');
 
-    box.querySelector('#reportLoginMessage').textContent = text;
+    element.textContent = text;
+    element.classList.toggle('is-loading', loading);
+
     box.querySelector('#reportLoginReload').hidden = !retry;
   }
 
@@ -209,58 +197,59 @@
     document.getElementById('reportAccessPanel')?.remove();
 
     const box = overlay();
-
     box.querySelector('#reportRequestAccess').hidden = true;
+
     box.hidden = false;
     box.style.display = 'grid';
 
     document.querySelector('.container')?.setAttribute('inert', '');
   }
 
-  function showPending(user = {}) {
+  function showPending(user) {
     const request = overlay().querySelector('#reportRequestAccess');
 
-    const status = getStatus(user);
-    const email = user.email || 'Akun ini';
+    const status = String(user?.status || '').toLowerCase();
 
-    request.hidden = !REQUESTABLE.includes(status);
-    request.disabled = false;
+    // Revoked, rejected and unregistered users may request again.
+    request.hidden = status === 'pending';
+
+    if (status === 'pending') {
+      message(
+        '管理者の承認を待っています。承認後、自動的にアプリが開きます。 / ' +
+        'Awaiting administrator approval. The app will open ' +
+        'automatically once approved.'
+      );
+    } else if (status === 'rejected') {
+      message(
+        'アクセスは許可されていません。再度アクセスを申請できます。 / ' +
+        'Access has not been granted. You can request access again.'
+      );
+    } else if (
+      status === 'revoked' ||
+      status === 'deleted' ||
+      status === 'inactive'
+    ) {
+      message(
+        '以前のアクセス権限は取り消されています。' +
+        '「アクセス申請」から再申請できます。 / ' +
+        'Your previous access was revoked. ' +
+        'Select Request access to apply again.'
+      );
+    } else {
+      message(
+        (user?.email || '') +
+        ' のアクセスはまだ許可されていません。' +
+        '「アクセス申請」を押してください。 / ' +
+        'This account is not yet authorized. ' +
+        'Select Request access to contact the administrator.'
+      );
+    }
 
     clearTimeout(pollTimer);
 
     if (status === 'pending') {
-      message(
-        '管理者の承認を待っています。 / ' +
-        'Menunggu persetujuan administrator. ' +
-        'Aplikasi akan terbuka setelah disetujui.'
-      );
-
       pollTimer = setTimeout(checkPending, 20000);
-      return;
     }
-
-    if (status === 'revoked' || status === 'deleted') {
-      message(
-        email +
-        ' — Akses sebelumnya telah dicabut. ' +
-        'Klik Request access untuk mendaftar ulang.'
-      );
-      return;
-    }
-
-    if (status === 'rejected') {
-      message(
-        'Permintaan sebelumnya ditolak. ' +
-        'Klik Request access untuk mengajukan ulang.'
-      );
-      return;
-    }
-
-    message(
-      email +
-      ' — Akun belum mempunyai akses. ' +
-      'Klik Request access untuk meminta persetujuan admin.'
-    );
   }
 
   async function checkPending() {
@@ -274,42 +263,35 @@
     checking = true;
 
     try {
-      await credential({
-        credential: pendingToken
-      });
+      await credential({ credential: pendingToken });
     } finally {
       checking = false;
     }
   }
 
-  function parseGoogleToken(credentialValue) {
-    const parts = credentialValue.split('.');
-
-    if (parts.length !== 3) {
-      throw new Error('Invalid Google credential');
-    }
-
-    const base64 = parts[1]
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
-
-    return JSON.parse(atob(base64));
-  }
-
   async function credential(response) {
     message(
-      'ログインを確認しています… / Verifying your account…'
+      'ログインを確認しています / Verifying your account',
+      false,
+      true
     );
 
     try {
       if (typeof validator !== 'function') {
-        throw new Error('Authentication validator missing');
+        throw new Error('Authentication validator is not configured');
       }
 
       const user = await validator(response.credential);
 
-      // Only validator/server can authorize access.
-      if (!isAuthorized(user)) {
+      const status = String(user?.status || '').toLowerCase();
+      const authorizedRole =
+        user?.role === 'admin' || user?.role === 'member';
+
+      // Do not authorize revoked or pending accounts.
+      if (
+        !authorizedRole ||
+        blockedStatuses.has(status)
+      ) {
         token = '';
         expires = 0;
         pendingToken = response.credential;
@@ -318,22 +300,28 @@
         return;
       }
 
-      const body = parseGoogleToken(response.credential);
-
-      if (!body.exp || body.exp * 1000 <= Date.now()) {
-        throw new Error('Google token expired');
-      }
-
       pendingToken = '';
       clearTimeout(pollTimer);
 
       overlay().querySelector('#reportRequestAccess').hidden = true;
 
+      const body = JSON.parse(
+        atob(
+          response.credential
+            .split('.')[1]
+            .replace(/-/g, '+')
+            .replace(/_/g, '/')
+        )
+      );
+
+      if (!body.exp || body.exp * 1000 <= Date.now()) {
+        throw new Error('Google token expired');
+      }
+
       token = response.credential;
       expires = body.exp * 1000;
 
       const box = overlay();
-
       box.hidden = true;
       box.style.display = 'none';
 
@@ -357,53 +345,38 @@
       if (user.role === 'admin') {
         adminButton();
       }
-
     } catch (error) {
-      console.error('Login error:', error);
-
       token = '';
       expires = 0;
-      pendingToken = '';
 
       clearTimeout(pollTimer);
 
       overlay().querySelector('#reportRequestAccess').hidden = true;
 
       message(
-        'ログインを確認できませんでした。 / ' +
-        'Login gagal diverifikasi. Silakan login ulang.',
+        'ログインを確認できませんでした。再読み込みして、' +
+        'もう一度ログインしてください。 / ' +
+        'Could not verify your sign-in. Reload and sign in again.',
         true
       );
     }
   }
 
   function adminButton() {
-    if (document.getElementById('reportAccessAdminButton')) {
-      return;
-    }
+    if (document.getElementById('reportAccessAdminButton')) return;
 
     const button = document.createElement('button');
-
     button.id = 'reportAccessAdminButton';
     button.type = 'button';
     button.textContent = 'Pengguna / 利用者';
 
-    button.style.cssText = `
-      position:fixed;
-      bottom:14px;
-      right:16px;
-      z-index:15000;
-      min-height:44px;
-      padding:10px 16px;
-      border-radius:8px;
-      border:1px solid #cbd5e1;
-      background:#fff;
-      color:#0f172a;
-      box-shadow:0 2px 8px #0002;
-    `;
+    button.style.cssText =
+      'position:fixed;bottom:14px;right:16px;z-index:15000;' +
+      'min-height:44px;padding:10px 16px;border-radius:8px;' +
+      'border:1px solid #cbd5e1;background:#fff;color:#0f172a;' +
+      'box-shadow:0 2px 8px #0002';
 
     button.onclick = openAccessPanel;
-
     document.body.append(button);
 
     if (new URL(location.href).searchParams.get('access') === '1') {
@@ -412,15 +385,14 @@
   }
 
   async function openAccessPanel() {
-    if (document.getElementById('reportAccessPanel')) {
-      return;
-    }
+    let panel = document.getElementById('reportAccessPanel');
+    if (panel) return;
 
     const priorFocus = document.activeElement;
 
-    const panel = document.createElement('section');
-
+    panel = document.createElement('section');
     panel.id = 'reportAccessPanel';
+
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-modal', 'true');
     panel.setAttribute(
@@ -428,16 +400,10 @@
       'Pengguna dan permintaan akses'
     );
 
-    panel.style.cssText = `
-      position:fixed;
-      inset:0;
-      z-index:30001;
-      background:#f8fafc;
-      padding:20px;
-      overflow:auto;
-      font:16px/1.6 system-ui;
-      color:#0f172a;
-    `;
+    panel.style.cssText =
+      'position:fixed;inset:0;z-index:30001;background:#f8fafc;' +
+      'padding:20px;overflow:auto;font:16px/1.6 system-ui;' +
+      'color:#0f172a';
 
     const card = document.createElement('div');
     card.style.cssText = 'max-width:760px;margin:auto';
@@ -446,11 +412,9 @@
     heading.textContent = 'Pengguna dan permintaan akses';
 
     const close = document.createElement('button');
-
     close.type = 'button';
     close.textContent = 'Tutup';
-    close.style.cssText =
-      'min-height:44px;padding:8px 16px';
+    close.style.cssText = 'min-height:44px;padding:8px 16px';
 
     close.onclick = () => {
       panel.remove();
@@ -458,7 +422,6 @@
     };
 
     const reload = document.createElement('button');
-
     reload.type = 'button';
     reload.textContent = 'Muat ulang';
 
@@ -477,9 +440,7 @@
     close.focus();
 
     panel.onkeydown = e => {
-      if (e.key === 'Escape') {
-        close.click();
-      }
+      if (e.key === 'Escape') close.click();
 
       if (e.key === 'Tab') {
         const buttons = Array.from(
@@ -494,7 +455,10 @@
         if (e.shiftKey && document.activeElement === first) {
           e.preventDefault();
           last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
+        } else if (
+          !e.shiftKey &&
+          document.activeElement === last
+        ) {
           e.preventDefault();
           first.focus();
         }
@@ -523,14 +487,11 @@
         function row(text) {
           const box = document.createElement('div');
 
-          box.style.cssText = `
-            padding:14px 0;
-            border-bottom:1px solid #e2e8f0;
-            overflow-wrap:anywhere;
-          `;
+          box.style.cssText =
+            'padding:14px 0;border-bottom:1px solid #e2e8f0;' +
+            'overflow-wrap:anywhere';
 
           const p = document.createElement('p');
-
           p.style.margin = '0 0 8px';
           p.textContent = text;
 
@@ -542,15 +503,11 @@
 
         function action(box, label, method, args, question) {
           const b = document.createElement('button');
-
           b.type = 'button';
           b.textContent = label;
 
-          b.style.cssText = `
-            min-height:44px;
-            padding:8px 16px;
-            margin-right:8px;
-          `;
+          b.style.cssText =
+            'min-height:44px;padding:8px 16px;margin-right:8px';
 
           b.onclick = async () => {
             if (question && !confirm(question)) return;
@@ -567,7 +524,6 @@
               );
 
               await refresh();
-
             } catch (error) {
               status.textContent = error.message;
 
@@ -601,7 +557,8 @@
             'Izinkan',
             'decideReportAccess',
             [request.email, request.id, 'approve'],
-            'Izinkan ' + request.email + ' sebagai member?'
+            'Izinkan ' + request.email +
+            ' membaca dan menggunakan laporan sebagai member?'
           );
 
           action(
@@ -629,8 +586,7 @@
         }
 
         status.textContent =
-          'Admin dapat menyetujui permintaan baru dan permintaan ulang.';
-
+          'Pengguna baru yang kamu izinkan mendapat akses member.';
       } catch (error) {
         status.textContent = error.message;
       } finally {
@@ -639,7 +595,6 @@
     }
 
     reload.onclick = refresh;
-
     await refresh();
   }
 
@@ -650,26 +605,28 @@
 
     if (!id) {
       message(
-        'Google Login belum dikonfigurasi. Hubungi admin.',
+        'Googleログインはまだ設定されていません。' +
+        '管理者にお問い合わせください。 / ' +
+        'Google sign-in is not configured. ' +
+        'Please contact the administrator.',
         true
       );
       return;
     }
 
     if (initializing) return;
-
     initializing = true;
 
     const script = document.createElement('script');
-
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
 
     script.onerror = () => {
       initializing = false;
-
       message(
-        'Gagal memuat Google Login. Reload halaman.',
+        'Googleログインを読み込めませんでした。' +
+        '再読み込みしてください。 / ' +
+        'Could not load Google sign-in. Please reload the page.',
         true
       );
     };
@@ -721,7 +678,7 @@
     invalidate() {
       lock();
       message(
-        'Login ulang diperlukan. / ログインし直してください。'
+        'ログインし直してください。 / Please sign in again.'
       );
     },
 
@@ -741,5 +698,4 @@
   } else {
     initialize();
   }
-
 })();
