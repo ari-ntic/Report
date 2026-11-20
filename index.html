@@ -1,4 +1,42 @@
-display: flex;
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <script src="config.js?v=4"></script>
+  <script src="auth.js?v=5"></script>
+  <script src="rpc.js?v=4"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>技能実習生・特定技能 報告記録</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg-body: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --danger-light: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      display: flex;
       flex-direction: column;
       gap: 16px;
     }
@@ -7404,6 +7442,5 @@ async function managerMutation(method,args){
 
 </body>
 </html>
-
 
 
