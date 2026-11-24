@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <script src="config.js?v=5"></script>
-  <script src="auth.js?v=23"></script>
+  <script src="auth.js?v=21"></script>
   <script src="rpc.js?v=4"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2627,7 +2627,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
         <div class="gallery-modal-title">☑️ 全タスク一覧 (All To-Do)</div>
         <small id="todoModalCountBadge" style="color:#2563eb; font-weight:600;">読み込み中...</small>
       </div>
-      <div class="share-modal-actions"><button type="button" class="photo-page-btn share-link-button" data-share-page="todo" onclick="copyPageLink('todo')">🔗 ページリンク</button><button type="button" class="gallery-modal-close-btn" onclick="closeTodoModal()">✕ 閉じる</button></div>
+      <button type="button" class="gallery-modal-close-btn" onclick="closeTodoModal()">✕ 閉じる</button>
     </div>
 
     <div style="padding-top: 12px; display: flex; flex-direction: column; gap: 12px;">
@@ -2709,7 +2709,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
         <div class="gallery-modal-title" id="lblRecentTitle">📋 最新の報告</div>
         <small id="countBadge" style="color:#2563eb; font-weight:600;">読み込み中...</small>
       </div>
-      <div class="share-modal-actions"><button type="button" class="photo-page-btn share-link-button" data-share-page="reports" onclick="copyPageLink('reports')">🔗 ページリンク</button><button type="button" class="gallery-modal-close-btn" onclick="closeReportsModal()">✕ 閉じる</button></div>
+      <button type="button" class="gallery-modal-close-btn" onclick="closeReportsModal()">✕ 閉じる</button>
     </div>
 
     <div id="reportsModalControls"><button type="button" class="revision-small-button" id="reportsSelectMode" onclick="toggleReportsSelection()"></button><button type="button" class="revision-small-button" id="packageOpenTrash" onclick="openPackageTrash()"></button></div>
@@ -2800,7 +2800,6 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
             <div class="photo-viewer-name" id="photoViewerName"></div>
             <div class="photo-viewer-meta" id="photoViewerMeta"></div>
             <div class="photo-viewer-note" id="photoViewerNote"></div>
-            <button type="button" class="photo-page-btn share-link-button" id="photoViewerShareLink" onclick="copyCurrentPhotoLink()">🔗 写真リンク</button>
           </div>
         </div>
       </div>
@@ -2831,10 +2830,10 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
           <span class="btn-next-short">次&gt;</span>
         </button>
       </div>
-      <div class="share-modal-actions"><button type="button" class="photo-page-btn share-link-button" data-share-page="photos" onclick="copyPageLink('photos')">🔗 ページリンク</button><button type="button" class="gallery-modal-close-btn" onclick="closeGalleryModal()" title="閉じる">
+      <button type="button" class="gallery-modal-close-btn" onclick="closeGalleryModal()" title="閉じる">
         <span>✕</span>
         <span class="close-btn-text"> 閉じる</span>
-      </button></div>
+      </button>
     </div>
     <div class="gallery-modal-grid" id="galleryModalGrid"></div>
   </div>
@@ -2848,7 +2847,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
 </div>
 <div id="packageManagerOverlay" class="package-overlay" hidden onclick="if(event.target===this)closePackageManager()">
  <section class="package-dialog" role="dialog" aria-modal="true" aria-labelledby="packageManagerTitle">
-   <div class="package-dialog-head gallery-modal-header"><h3 id="packageManagerTitle" class="gallery-modal-title"></h3><div class="share-modal-actions"><button type="button" class="photo-page-btn share-link-button" id="packageManagerShareLink" onclick="copyCurrentReportLink()">🔗 報告リンク</button><button type="button" class="gallery-modal-close-btn" onclick="closePackageManager()" aria-label="Close">✕</button></div></div>
+  <div class="package-dialog-head gallery-modal-header"><h3 id="packageManagerTitle" class="gallery-modal-title"></h3><button type="button" class="gallery-modal-close-btn" onclick="closePackageManager()" aria-label="Close">✕</button></div>
   <div class="package-scroll-body" id="packageManagerBody"><p id="packageManagerDescription"></p><label id="packageManagedPhotosLabel"></label><div id="packagePhotos"></div><label id="packageManagedHistoryLabel"></label><div id="packageManagedHistory"></div><div id="packageManagerError" class="package-error" role="alert"></div></div>
   <div class="package-footer"><button type="button" class="revision-small-button" id="packageManagerClose" onclick="closePackageManager()"></button><button type="button" class="revision-small-button package-danger" id="packageTrashReportButton" onclick="confirmReportTrash()" disabled></button></div>
  </section>
@@ -2868,12 +2867,6 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
 </div>
 
 
-<style>
-  .share-modal-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:0 0 auto}
-  .share-link-button{white-space:nowrap;min-height:40px}
-  #photoViewerShareLink{margin-top:10px}
-  @media(max-width:560px){.share-modal-actions{gap:5px}.share-link-button{font-size:11px;padding:6px 8px;min-height:40px}}
-</style>
 <script>
   let currentLang = 'ja';
   let dbPersons = [];
@@ -4781,7 +4774,6 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
         applyJurnalPageData(result.jurnalPage, false);
         primeReportPage(result.jurnalPage);
         markMainLoadReady("journal");
-        handleInitialShareLink();
       })
       .withFailureHandler(function(err) {
         console.error('getJurnalBootstrap failed:', err);
@@ -5291,90 +5283,6 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
     resetZoom();
     viewerPhotos = [];
     viewerIndex = 0;
-  }
-
-  function makeShareUrl(view, values) {
-    const url = new URL(window.location.href);
-    url.search = '';
-    url.hash = '';
-    url.searchParams.set('view', view);
-    Object.entries(values || {}).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && String(value) !== '') url.searchParams.set(key, String(value));
-    });
-    return url.toString();
-  }
-
-  async function copyShareUrl(url, button) {
-    const oldText = button ? button.textContent : '';
-    try {
-      if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(url);
-      else {
-        const input = document.createElement('textarea'); input.value = url;
-        input.style.cssText = 'position:fixed;left:-9999px;top:0'; document.body.append(input);
-        input.focus(); input.select();
-        if (!document.execCommand('copy')) throw Error('Copy failed');
-        input.remove();
-      }
-      if (button) {
-        button.textContent = currentLang === 'ja' ? 'コピーしました' : 'Link copied';
-        setTimeout(() => { if (button.isConnected) button.textContent = oldText; }, 1800);
-      }
-    } catch (error) {
-      if (button) button.textContent = currentLang === 'ja' ? 'リンクを選択してください' : 'Copy failed';
-      console.warn('Could not copy share link:', error);
-    }
-  }
-
-  function copyPageLink(page) {
-    const values = {};
-    if (page === 'reports') values.pageNo = currentPage || 1;
-    if (page === 'photos') values.pageNo = galleryCurrentPage || 1;
-    return copyShareUrl(makeShareUrl(page, values), document.querySelector('[data-share-page="' + page + '"]'));
-  }
-
-  function copyReportLink(id) {
-    const reportId = id || (packageEntry && packageEntry.id);
-    if (!reportId) return;
-    return copyShareUrl(makeShareUrl('report', { id: reportId }), document.getElementById('packageManagerShareLink'));
-  }
-
-  function copyCurrentReportLink() { return copyReportLink(); }
-
-  function copyCurrentPhotoLink() {
-    const photo = viewerPhotos[viewerIndex];
-    const id = photo && viewerPhotoFileId(photo.url);
-    if (!id) return;
-    return copyShareUrl(makeShareUrl('photo', { id }), document.getElementById('photoViewerShareLink'));
-  }
-
-  async function handleInitialShareLink() {
-    if (window.__nticShareRouteHandled) return;
-    const params = new URLSearchParams(window.location.search);
-    const view = params.get('view');
-    if (!view) return;
-    window.__nticShareRouteHandled = true;
-    const pageNo = Math.max(1, Math.min(9999, parseInt(params.get('pageNo') || '1', 10) || 1));
-    if (view === 'report' && params.get('id')) {
-      openReportsModal(false);
-      try { await openPackageManager(params.get('id'), true); }
-      catch (error) { console.error('Could not open shared report:', error); }
-      return;
-    }
-    if (view === 'photo' && params.get('id')) {
-      try {
-        const result = await menuRpc('getJournalFocusedPhoto', params.get('id'));
-        if (result && result.success && result.photos && result.photos.length) openPhotoViewer(result.photos, result.index || 0);
-      } catch (error) { console.error('Could not open shared photo:', error); }
-      return;
-    }
-    if (view === 'reports') {
-      openReportsModal(true);
-      if (pageNo > 1) { currentPage = pageNo; loadJurnalPage(true); }
-    } else if (view === 'photos') {
-      openGalleryModal();
-      if (pageNo > 1) { galleryCurrentPage = pageNo; loadGalleryPage(pageNo); }
-    } else if (view === 'todo') openTodoModal();
-    else if (view === 'home') window.scrollTo({top:0, behavior:'smooth'});
   }
 
   function viewerGoTo(idx) {
@@ -6351,14 +6259,6 @@ function updateTerminologyLabels() {
   document.querySelectorAll('.photo-nav-prev').forEach(el => el.setAttribute('aria-label', currentLang === 'ja' ? '前の写真' : 'Previous photo'));
   document.querySelectorAll('.photo-nav-next').forEach(el => el.setAttribute('aria-label', currentLang === 'ja' ? '次の写真' : 'Next photo'));
   document.getElementById('photoViewerCloseBtn').setAttribute('aria-label',t.close);
-  document.querySelectorAll('.share-link-button[data-share-page]').forEach(button => {
-    const page = button.dataset.sharePage;
-    button.textContent = currentLang === 'ja' ? '🔗 ページリンク' : '🔗 Page link';
-  });
-  const photoShare = document.getElementById('photoViewerShareLink');
-  if (photoShare) photoShare.textContent = currentLang === 'ja' ? '🔗 写真リンク' : '🔗 Photo link';
-  const reportShare = document.getElementById('packageManagerShareLink');
-  if (reportShare) reportShare.textContent = currentLang === 'ja' ? '🔗 報告リンク' : '🔗 Report link';
   renderTodoList(); renderTodoModalList();
 }
 
@@ -7346,17 +7246,11 @@ function reportMenuMarkup(item){return '<button type="button" class="revision-sm
 function openReportActions(id){if(packageBusy||reportsSelecting||reportsLoading)return;reportActionsFocus=document.activeElement;openPackageManager(id);}
 function closeReportActions(restoreFocus=true){if(packageBusy)return;document.getElementById('packageRowActionsOverlay').hidden=true;reportActionsEntry=null;syncReportsScrollLock();if(restoreFocus&&reportActionsFocus&&reportActionsFocus.isConnected)reportActionsFocus.focus({preventScroll:true});}
 function reportContext(id){return reportsPageEntries.find(e=>e.id===id)||summaryMenuEntries.find(e=>e.id===id)||null;}
-async function openPackageManager(id, allowDirect=false){
-  if(packageBusy||reportsSelecting||(reportsLoading&&!allowDirect))return;
-  let entry=reportContext(id),directPackage=null;
-  if(!entry&&allowDirect){directPackage=await menuRpc('getJournalPackage',id);if(!directPackage||!directPackage.success||!directPackage.report)return;entry=directPackage.report;}
-  if(!entry)return;reportMenuFocus=reportActionsFocus||document.activeElement;closeReportMenus();
-  packageEntry=Object.assign({},entry);packageLoaded=false;packageManage=true;packagePhotos=[];packageHistory=[];updatePackageLabels();updateReportsControls();
-  document.getElementById('packageManagerDescription').textContent=packageReportLabel(packageEntry);document.getElementById('packageManagerError').textContent='';document.getElementById('packagePhotos').textContent=packageT().loading;document.getElementById('packageManagedHistory').textContent='';
-  prepareInlineManager();document.getElementById('packageManagerOverlay').hidden=false;syncReportsScrollLock();document.getElementById('packageManagerClose').focus();
-  if(directPackage){packageEntry=Object.assign({},directPackage.report);packagePhotos=directPackage.photos||[];packageHistory=directPackage.history||[];packageLoaded=true;renderPackagePhotos();renderManagedHistory();updateReportsControls();}
-  else await reloadPackageManager();
-  setupReportEditor();
+async function openPackageManager(id){
+ if(packageBusy||reportsSelecting||reportsLoading)return;const entry=reportContext(id);if(!entry)return;reportMenuFocus=reportActionsFocus||document.activeElement;closeReportMenus();
+ packageEntry=Object.assign({},entry);packageLoaded=false;packageManage=true;packagePhotos=[];packageHistory=[];updatePackageLabels();updateReportsControls();
+ document.getElementById('packageManagerDescription').textContent=packageReportLabel(packageEntry);document.getElementById('packageManagerError').textContent='';document.getElementById('packagePhotos').textContent=packageT().loading;document.getElementById('packageManagedHistory').textContent='';
+ prepareInlineManager();document.getElementById('packageManagerOverlay').hidden=false;syncReportsScrollLock();document.getElementById('packageManagerClose').focus();await reloadPackageManager();setupReportEditor();
 }
 async function reloadPackageManager(){
  if(!packageEntry)return;const id=packageEntry.id,sequence=++packageLoadSequence;packageLoaded=false;updateReportsControls();
@@ -7569,6 +7463,5 @@ async function managerMutation(method,args){
   <script src="editor-photo-upload.js?v=1"></script>
 </body>
 </html>
-
 
 
