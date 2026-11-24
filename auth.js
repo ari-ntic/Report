@@ -46,17 +46,27 @@
   function accountMenu(user){
     document.getElementById('reportAccountMenu')?.remove();
     const host=document.querySelector('.header-card');if(!host)return;
-    if(!document.getElementById('reportAccountMenuStyles')){
-      const style=document.createElement('style');style.id='reportAccountMenuStyles';
-      style.textContent='#headerActions{display:flex;align-items:center;gap:8px;flex:0 0 auto}#headerActions #reportAccountMenu .report-account-trigger{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:104px;min-width:104px;max-width:104px;height:38px;min-height:38px;padding:0 10px;border:0;border-radius:10px;background:#334155;color:#fff;font:600 13px system-ui,sans-serif;white-space:nowrap;cursor:pointer;transition:background-color .15s;box-sizing:border-box}#headerActions #reportAccountMenu .report-account-trigger:hover{background:#475569}#headerActions #reportAccountMenu .report-account-trigger:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}#headerActions #reportAccountMenu .report-account-trigger.is-icon-only{width:38px;min-width:38px;max-width:38px;padding:0}#headerActions #reportAccountMenu .report-account-trigger.is-icon-only #reportAccountMenuLabel{display:none}@media(max-width:500px){#headerActions{gap:8px}#headerActions .lang-toggle-btn{width:38px;min-width:38px;max-width:38px;height:38px;padding:0}#headerActions #langToggleLabel{display:none}#headerActions #reportAccountMenu .report-account-trigger{width:38px;min-width:38px;max-width:38px;padding:0}#reportAccountMenuLabel{display:none}}';
-      document.head.append(style);
-    }
     const wrap=document.createElement('div');wrap.id='reportAccountMenu';wrap.style.cssText='position:relative;flex:0 0 auto;z-index:15001';
     const trigger=document.createElement('button');trigger.type='button';trigger.id='reportAccountMenuButton';trigger.className='report-account-trigger';trigger.setAttribute('aria-haspopup','true');trigger.setAttribute('aria-expanded','false');
     trigger.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>';
     const triggerLabel=document.createElement('span');triggerLabel.id='reportAccountMenuLabel';triggerLabel.textContent=typeof currentLang!=='undefined'&&currentLang==='en'?'Menu':'メニュー';
     trigger.setAttribute('aria-label',typeof currentLang!=='undefined'&&currentLang==='en'?'Menu':'メニュー');
     trigger.append(triggerLabel);
+    const languageButton=document.getElementById('langToggleBtn');
+    function syncMenuButtonStyle(){
+      if(!languageButton)return;
+      const languageStyle=getComputedStyle(languageButton);
+      const compact=window.matchMedia('(max-width:500px)').matches||trigger.classList.contains('is-icon-only');
+      trigger.style.cssText='display:inline-flex;align-items:center;justify-content:center;gap:7px;box-sizing:border-box;width:'+(compact?'38px':'104px')+';min-width:'+(compact?'38px':'104px')+';max-width:'+(compact?'38px':'104px')+';height:38px;min-height:38px;padding:'+(compact?'0':'0 10px')+';border:'+languageStyle.borderTopWidth+' '+languageStyle.borderTopStyle+' '+languageStyle.borderTopColor+';border-radius:'+languageStyle.borderRadius+';background:'+languageStyle.backgroundColor+';color:'+languageStyle.color+';font:'+languageStyle.font+';font-weight:'+languageStyle.fontWeight+';white-space:nowrap;cursor:pointer;transition:background-color .15s';
+      triggerLabel.style.display=compact?'none':'inline';
+    }
+    trigger.addEventListener('mouseenter',()=>{trigger.style.backgroundColor='#475569';});
+    trigger.addEventListener('mouseleave',syncMenuButtonStyle);
+    trigger.addEventListener('focus',()=>{trigger.style.outline='2px solid #60a5fa';trigger.style.outlineOffset='2px';});
+    trigger.addEventListener('blur',()=>{trigger.style.outline='';trigger.style.outlineOffset='';});
+    syncMenuButtonStyle();
+    window.addEventListener('resize',syncMenuButtonStyle);
+    new MutationObserver(syncMenuButtonStyle).observe(trigger,{attributes:true,attributeFilter:['class']});
     const menu=document.createElement('div');menu.hidden=true;menu.setAttribute('role','menu');menu.style.cssText='position:absolute;right:0;top:calc(100% + 8px);width:min(280px,calc(100vw - 32px));padding:10px;background:#fff;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 8px 28px #0002;color:#0f172a';
     function item(label,action){const button=document.createElement('button');button.type='button';button.setAttribute('role','menuitem');button.textContent=label;button.style.cssText='display:block;width:100%;min-height:44px;text-align:left;padding:9px 12px;border:0;border-radius:8px;background:#fff;color:#0f172a;font:inherit;cursor:pointer';button.onmouseenter=()=>button.style.background='#f1f5f9';button.onmouseleave=()=>button.style.background='#fff';button.onclick=()=>{close();action();};menu.append(button);return button;}
     if(user.role==='admin')item('Pengguna / 利用者',openAccessPanel);
