@@ -46,6 +46,11 @@
   function accountMenu(user){
     document.getElementById('reportAccountMenu')?.remove();
     const host=document.querySelector('.header-card');if(!host)return;
+    if(!document.getElementById('reportAccountMenuStyles')){
+      const style=document.createElement('style');style.id='reportAccountMenuStyles';
+      style.textContent='#headerActions{display:flex;align-items:center;gap:8px;flex:0 0 auto}#headerActions #reportAccountMenu .report-account-trigger{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:104px;min-width:104px;max-width:104px;height:38px;min-height:38px;padding:0 10px;border:0;border-radius:10px;background:#334155;color:#fff;font:600 13px system-ui,sans-serif;white-space:nowrap;cursor:pointer;transition:background-color .15s;box-sizing:border-box}#headerActions #reportAccountMenu .report-account-trigger:hover{background:#475569}#headerActions #reportAccountMenu .report-account-trigger:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}#headerActions #reportAccountMenu .report-account-trigger.is-icon-only{width:38px;min-width:38px;max-width:38px;padding:0}#headerActions #reportAccountMenu .report-account-trigger.is-icon-only #reportAccountMenuLabel{display:none}@media(max-width:500px){#headerActions{gap:8px}#headerActions .lang-toggle-btn{width:38px;min-width:38px;max-width:38px;height:38px;padding:0}#headerActions #langToggleLabel{display:none}#headerActions #reportAccountMenu .report-account-trigger{width:38px;min-width:38px;max-width:38px;padding:0}#reportAccountMenuLabel{display:none}}';
+      document.head.append(style);
+    }
     const wrap=document.createElement('div');wrap.id='reportAccountMenu';wrap.style.cssText='position:relative;flex:0 0 auto;z-index:15001';
     const trigger=document.createElement('button');trigger.type='button';trigger.id='reportAccountMenuButton';trigger.className='report-account-trigger';trigger.setAttribute('aria-haspopup','true');trigger.setAttribute('aria-expanded','false');
     trigger.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>';
