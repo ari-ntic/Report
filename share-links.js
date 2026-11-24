@@ -4,6 +4,8 @@
   let applyingAddress = false;
   let routeHandled = false;
   let routeApplying = false;
+  let restoredModalRoute = false;
+  const HOME_RETURN_CLOSERS = new Set(['closeReportsModal','closeGalleryModal','closeTodoModal','closePhotoViewer']);
 
   const FILTER_KEYS = ['company', 'category', 'urgency', 'search'];
   const MANAGED_KEYS = ['view', 'pageNo', 'id', ...FILTER_KEYS];
@@ -71,11 +73,28 @@
 
   function syncSoon(replace) { window.setTimeout(() => syncAddress(!!replace), 0); }
 
+  function ensureRestoredHomeLoaded() {
+    if (!restoredModalRoute || applyingAddress || visibleRoute().view !== 'home') return;
+    let attempts = 0;
+    const check = () => {
+      if (!restoredModalRoute || applyingAddress || visibleRoute().view !== 'home') return;
+      const missing = ['journal', 'followups', 'todo'].filter(part => !mainLoadState[part]);
+      if (!missing.length) { restoredModalRoute = false; return; }
+      if (attempts++ < 20) { window.setTimeout(check, 150); return; }
+      restoredModalRoute = false;
+      if (!mainLoadState.journal && typeof loadJurnalBootstrap === 'function') loadJurnalBootstrap();
+      else if (!mainLoadState.followups && typeof loadRecentFollowUps === 'function') loadRecentFollowUps();
+      if (!mainLoadState.todo && typeof loadTodoList === 'function') loadTodoList();
+    };
+    check();
+  }
+
   function hook(name, replace) {
     const original = window[name];
     if (typeof original !== 'function' || original.__addressSyncWrapped) return;
     const wrapped = function(...args) {
       const result = original.apply(this, args);
+      if (HOME_RETURN_CLOSERS.has(name)) ensureRestoredHomeLoaded();
       syncSoon(!!replace);
       return result;
     };
@@ -141,6 +160,7 @@
     if (routeApplying) return;
     routeApplying = true;
     routeHandled = true;
+    restoredModalRoute = false;
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
     const pageNo = Math.max(1, Math.min(9999, Number.parseInt(params.get('pageNo') || '1', 10) || 1));
@@ -164,6 +184,7 @@
         openGalleryModal();
         if (pageNo > 1) { galleryCurrentPage = pageNo; loadGalleryPage(pageNo); }
       } else if (view === 'todo') openTodoModal();
+      if (view && view !== 'home') restoredModalRoute = true;
     } catch (error) {
       console.error('Could not open address-linked view:', error);
     } finally {
