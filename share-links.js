@@ -87,30 +87,45 @@
       if (!mainLoadState.todo && typeof loadTodoList === 'function') loadTodoList();
     };
     check();
-  }  // Load restored-home data one section at a time. A newer view cancels queued work.
+  }  // Reload restored-home data in priority order. A newer navigation cancels queued work.
   ensureRestoredHomeLoaded = function() {
     if (!restoredModalRoute || applyingAddress || visibleRoute().view !== 'home') return;
     const generation = (ensureRestoredHomeLoaded._generation || 0) + 1;
     ensureRestoredHomeLoaded._generation = generation;
-    const intent = typeof menuIntent === 'undefined' ? null : menuIntent;
     const graceUntil = Date.now() + 3000;
     const skipped = new Set();
-    const canContinue = () => generation === ensureRestoredHomeLoaded._generation && restoredModalRoute && !applyingAddress && visibleRoute().view === 'home' && (intent === null || intent === menuIntent);
+    const dashboardBefore = typeof lastDashboardData === 'undefined' ? null : lastDashboardData;
+    const jurnalBefore = typeof lastJurnalPageResult === 'undefined' ? null : lastJurnalPageResult;
+    const canContinue = () => generation === ensureRestoredHomeLoaded._generation && restoredModalRoute && !applyingAddress && visibleRoute().view === 'home';
+    const isReady = part => part === 'home'
+      ? lastDashboardData !== dashboardBefore && lastJurnalPageResult !== jurnalBefore && !!mainLoadState.followups
+      : !!mainLoadState.todo;
     const loadNext = () => {
       if (!canContinue()) return;
-      const part = ['journal', 'followups', 'todo'].find(key => !mainLoadState[key] && !skipped.has(key));
+      const part = ['home', 'todo'].find(key => !isReady(key) && !skipped.has(key));
       if (!part) { restoredModalRoute = false; return; }
       if (Date.now() < graceUntil) { window.setTimeout(loadNext, 150); return; }
       const start = () => {
         if (!canContinue()) return;
-        if (mainLoadState[part]) { window.setTimeout(loadNext, 0); return; }
-        const loader = part === 'journal' ? loadJurnalBootstrap : part === 'followups' ? loadRecentFollowUps : loadTodoList;
-        if (typeof loader !== 'function') { skipped.add(part); loadNext(); return; }
-        loader();
+        if (isReady(part)) { window.setTimeout(loadNext, 0); return; }
         const deadline = Date.now() + 20000;
+        if (part === 'home') {
+          // Refresh dashboard (including photos and follow-ups) and the first report page.
+          mainLoadState.journal = false;
+          mainLoadState.followups = false;
+          if (typeof loadJurnalBootstrap !== 'function') { skipped.add(part); loadNext(); return; }
+          loadJurnalBootstrap();
+        } else {
+          if (typeof loadTodoList !== 'function') { skipped.add(part); loadNext(); return; }
+          loadTodoList();
+        }
         const waitForPart = () => {
           if (!canContinue()) return;
-          if (mainLoadState[part]) { window.setTimeout(loadNext, 150); return; }
+          if (isReady(part)) {
+            if (part === 'home' && !mainLoadState.journal) markMainLoadReady('journal');
+            window.setTimeout(loadNext, 150);
+            return;
+          }
           if (Date.now() >= deadline) { skipped.add(part); loadNext(); return; }
           window.setTimeout(waitForPart, 150);
         };
