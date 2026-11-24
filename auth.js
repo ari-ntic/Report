@@ -51,7 +51,7 @@
   function accountMenu(user){
     document.getElementById('reportAccountMenu')?.remove();
     const host=document.querySelector('.header-card');if(!host)return;
-    const wrap=document.createElement('div');wrap.id='reportAccountMenu';wrap.style.cssText='position:relative;flex:0 0 auto;z-index:30001';
+    const wrap=document.createElement('div');wrap.id='reportAccountMenu';wrap.style.cssText='position:relative;flex:0 0 auto;z-index:10';
     const trigger=document.createElement('button');trigger.type='button';trigger.id='reportAccountMenuButton';trigger.className='report-account-trigger';trigger.setAttribute('aria-haspopup','true');trigger.setAttribute('aria-expanded','false');
     trigger.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>';
     const triggerLabel=document.createElement('span');triggerLabel.id='reportAccountMenuLabel';triggerLabel.textContent=typeof currentLang!=='undefined'&&currentLang==='en'?'Menu':'メニュー';
