@@ -92,8 +92,9 @@
     const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;
     script.onerror=()=>{initializing=false;message('Googleログインを読み込めませんでした。再読み込みしてください。 / Could not load Google sign-in. Please reload the page.',true);};
     script.onload=()=>{
-      google.accounts.id.initialize({client_id:id,callback:credential,auto_select:false,ux_mode:'popup',itp_support:true,use_fedcm_for_button:true,button_auto_select:true});
+      google.accounts.id.initialize({client_id:id,callback:credential,auto_select:true,ux_mode:'popup',itp_support:true,use_fedcm_for_button:true,button_auto_select:true});
       google.accounts.id.renderButton(document.getElementById('reportGoogleButton'),{theme:'outline',size:'large',text:'signin_with',shape:'rectangular'});
+      google.accounts.id.prompt();
     };document.head.append(script);
   }
   window.ReportAuth={
