@@ -203,6 +203,13 @@
     searchBox.addEventListener('change', () => syncSoon(true));
   }
 
+  const ROUTE_BACKDROPS = new Set(['todoModalOverlay', 'reportsModalOverlay', 'galleryModalOverlay', 'packageManagerOverlay', 'photoViewerOverlay']);
+  document.addEventListener('click', event => {
+    const target = event.target;
+    if (!(target instanceof Element) || !ROUTE_BACKDROPS.has(target.id)) return;
+    window.setTimeout(() => syncAddress(true), 180);
+  }, true);
+
   const observer = new MutationObserver(() => syncSoon(false));
   observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'style', 'class', 'aria-hidden'] });
   window.addEventListener('report-login', () => { if (new URLSearchParams(window.location.search).has('view')) { routeHandled = false; routeApplying = false; window.setTimeout(applyAddressRoute, 0); } }); window.addEventListener('popstate', () => { routeHandled = false; routeApplying = false; applyAddressRoute(); });
