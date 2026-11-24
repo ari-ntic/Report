@@ -1,4 +1,4 @@
-/* Google login only. Credentials live in memory and expire with the Google token. */
+/* Google sign-in starts a revocable 30-day device session; the ID token is not stored in browser storage. */
 (() => {
   'use strict';
   let token='',expires=0,waiters=[],validator,initializing=false,accessTransport,pendingToken='',pollTimer,checking=false,accountOutsideHandler;
@@ -16,6 +16,17 @@
   }
   function message(text,retry=false){const box=overlay();box.querySelector('#reportLoginMessage').textContent=text;box.querySelector('#reportLoginReload').hidden=!retry;}
   function lock(){token='';expires=0;pendingToken='';clearTimeout(pollTimer);document.getElementById('reportAccountMenu')?.remove();if(accountOutsideHandler){document.removeEventListener('click',accountOutsideHandler);accountOutsideHandler=null;}document.getElementById('reportAccessAdminButton')?.remove();document.getElementById('reportAccessPanel')?.remove();const box=overlay();box.querySelector('#reportRequestAccess').hidden=true;box.hidden=false;box.style.display='grid';document.querySelector('.container')?.setAttribute('inert','');}
+  function clearSavedSession(){try{localStorage.removeItem('nticReportSession');}catch(_){}}
+  function finishSignIn(user,sessionToken,expiresAt){
+    token=sessionToken;expires=Number(expiresAt)||0;
+    try{localStorage.setItem('nticReportSession',sessionToken);}catch(_){}
+    pendingToken='';clearTimeout(pollTimer);overlay().querySelector('#reportRequestAccess').hidden=true;
+    const box=overlay();box.hidden=true;box.style.display='none';document.querySelector('.container')?.removeAttribute('inert');
+    for(const job of waiters.splice(0))job.resolve(token);
+    document.getElementById('singleInput')?.focus();
+    window.dispatchEvent(new CustomEvent('report-login',{detail:{email:user.email,role:user.role}}));
+    accountMenu(user);
+  }
   function showPending(user){
     const request=overlay().querySelector('#reportRequestAccess');request.hidden=user.status==='rejected';
     const googleButton=overlay().querySelector('#reportGoogleButton');if(googleButton)googleButton.hidden=user.status==='pending';
@@ -33,14 +44,8 @@
     try{
       const user=await validator(response.credential);
       if(user.role==='pending'){token='';expires=0;pendingToken=response.credential;showPending(user);return;}
-      pendingToken='';clearTimeout(pollTimer);overlay().querySelector('#reportRequestAccess').hidden=true;
-      const body=JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-      token=response.credential;expires=body.exp*1000;
-      const box=overlay();box.hidden=true;box.style.display='none';document.querySelector('.container')?.removeAttribute('inert');
-      for(const job of waiters.splice(0))job.resolve(token);
-      document.getElementById('singleInput')?.focus();
-      window.dispatchEvent(new CustomEvent('report-login',{detail:{email:user.email,role:user.role}}));
-      accountMenu(user);
+      if(!user.sessionToken||!user.expiresAt)throw new Error('SESSION_CREATE_FAILED');
+      finishSignIn(user,user.sessionToken,user.expiresAt);
     }catch(error){token='';expires=0;clearTimeout(pollTimer);overlay().querySelector('#reportRequestAccess').hidden=true;message('ログインを確認できませんでした。再読み込みして、もう一度ログインしてください。 / Could not verify your sign-in. Reload and sign in again.',true);}
   }
   function accountMenu(user){
@@ -108,6 +113,21 @@
     lock();
     const id=window.REPORT_CONFIG?.googleClientId;
     if(!id){message('Googleログインはまだ設定されていません。管理者にお問い合わせください。 / Google sign-in is not configured. Please contact the administrator.',true);return;}
+    let saved='';try{saved=localStorage.getItem('nticReportSession')||'';}catch(_){}
+    if(saved&&validator){
+      message('セッションを確認しています… / Restoring your session…');
+      validator(saved).then(function(user){
+        if(user&&user.sessionToken&&user.role!=='pending'){finishSignIn(user,user.sessionToken,user.expiresAt);return;}
+        clearSavedSession();loadGoogleSignIn(id);
+      }).catch(function(error){
+        if(/AUTH_(?:INVALID|EXPIRED|REQUIRED)|ACCESS_DENIED/.test(String(error&&error.message||error))){clearSavedSession();loadGoogleSignIn(id);return;}
+        message('セッションを確認できません。ネットワークを確認して再読み込みしてください。 / Could not restore your session. Check your connection and reload.',true);
+      });
+      return;
+    }
+    loadGoogleSignIn(id);
+  }
+  function loadGoogleSignIn(id){
     if(initializing)return;initializing=true;
     const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;
     script.onerror=()=>{initializing=false;message('Googleログインを読み込めませんでした。再読み込みしてください。 / Could not load Google sign-in. Please reload the page.',true);};
@@ -120,9 +140,9 @@
   window.ReportAuth={
     setValidator(fn){validator=fn;},
     setAccessTransport(fn){accessTransport=fn;},
-    token(){if(token&&expires>Date.now()+30000)return Promise.resolve(token);lock();return new Promise((resolve,reject)=>waiters.push({resolve,reject}));},
-    invalidate(){lock();message('ログインし直してください。 / Please sign in again.');},
-    signOut(){google.accounts?.id?.disableAutoSelect();lock();location.reload();}
+    token(){if(token&&expires>Date.now()+30000)return Promise.resolve(token);clearSavedSession();lock();return new Promise((resolve,reject)=>waiters.push({resolve,reject}));},
+    invalidate(){clearSavedSession();lock();message('ログインし直してください。 / Please sign in again.');},
+    async signOut(){const previous=token;try{if(previous&&accessTransport)await accessTransport('logoutReportSession',[],previous);}catch(_){}clearSavedSession();google.accounts?.id?.disableAutoSelect();lock();location.reload();}
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
 })();
