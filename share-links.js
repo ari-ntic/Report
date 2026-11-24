@@ -1,92 +1,139 @@
-/* Direct links for app views, reports, and individual photos.
- * Uses the existing authenticated RPC and stable report/Drive IDs.
- */
+/* Keep the browser address in sync with the visible app view. */
 (() => {
   'use strict';
-  const params = new URLSearchParams(window.location.search);
+  let applyingAddress = false;
   let routeHandled = false;
-  const labels = {
-    ja: { page: '🔗 ページリンク', report: '🔗 報告リンク', photo: '🔗 写真リンク', copied: 'コピーしました', failed: 'コピーできませんでした' },
-    en: { page: '🔗 Page link', report: '🔗 Report link', photo: '🔗 Photo link', copied: 'Link copied', failed: 'Copy failed' }
-  };
-  function text(key) { return (typeof currentLang !== 'undefined' && currentLang === 'en' ? labels.en : labels.ja)[key]; }
-  function pageUrl(view, extra = {}) {
-    const url = new URL(window.location.href);
-    url.search = ''; url.hash = ''; url.searchParams.set('view', view);
-    Object.entries(extra).forEach(([key, value]) => { if (value !== undefined && value !== null && String(value) !== '') url.searchParams.set(key, String(value)); });
-    return url.toString();
+
+  function isOpen(el) {
+    return !!el && !el.hidden && el.getAttribute('aria-hidden') !== 'true' && getComputedStyle(el).display !== 'none';
   }
-  async function copyLink(url, button) {
-    try {
-      if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(url);
-      else {
-        const field = document.createElement('textarea'); field.value = url; field.style.cssText = 'position:fixed;left:-9999px;top:0'; document.body.append(field); field.select();
-        const copied = document.execCommand('copy'); field.remove(); if (!copied) throw new Error('Clipboard unavailable');
-      }
-      button.textContent = text('copied'); window.setTimeout(updateLabels, 1800);
-    } catch (error) { button.textContent = text('failed'); window.setTimeout(updateLabels, 1800); }
-  }
-  function makeButton(id, clickHandler) {
-    let button = document.getElementById(id); if (button) return button;
-    button = document.createElement('button'); button.type = 'button'; button.id = id; button.className = 'photo-page-btn report-share-link'; button.addEventListener('click', clickHandler); return button;
-  }
-  function placeBeforeClose(selector, id, clickHandler) {
-    const header = document.querySelector(selector), close = header && header.querySelector('.gallery-modal-close-btn'); if (!header || !close) return;
-    const button = makeButton(id, clickHandler); if (button.parentElement !== header) close.before(button);
-  }
-  function installShareButtons() {
-    placeBeforeClose('#todoModalOverlay .gallery-modal-header', 'shareTodoPage', () => copyLink(pageUrl('todo'), document.getElementById('shareTodoPage')));
-    placeBeforeClose('#reportsModalOverlay .gallery-modal-header', 'shareReportsPage', () => copyLink(pageUrl('reports', { pageNo: currentPage || 1 }), document.getElementById('shareReportsPage')));
-    placeBeforeClose('#galleryModalOverlay .gallery-modal-header', 'sharePhotosPage', () => copyLink(pageUrl('photos', { pageNo: galleryCurrentPage || 1 }), document.getElementById('sharePhotosPage')));
-    placeBeforeClose('#packageManagerOverlay .package-dialog-head', 'shareReport', () => {
-      if (typeof packageEntry !== 'undefined' && packageEntry && packageEntry.id) copyLink(pageUrl('report', { id: packageEntry.id }), document.getElementById('shareReport'));
-    });
+
+  function visibleRoute() {
     const photoInfo = document.getElementById('photoViewerInfo');
-    if (photoInfo) {
-      const button = makeButton('sharePhoto', () => {
-        const photo = typeof viewerPhotos !== 'undefined' && viewerPhotos[viewerIndex];
-        const id = photo && typeof viewerPhotoFileId === 'function' ? viewerPhotoFileId(photo.url) : '';
-        if (id) copyLink(pageUrl('photo', { id }), document.getElementById('sharePhoto'));
-      });
-      if (button.parentElement !== photoInfo) photoInfo.append(button);
-      if (!photoInfo.__shareLinkObserver) {
-        photoInfo.__shareLinkObserver = new MutationObserver(() => { if (!document.getElementById('sharePhoto')) installShareButtons(); });
-        photoInfo.__shareLinkObserver.observe(photoInfo, { childList: true });
-      }
+    const photo = typeof viewerPhotos !== 'undefined' && viewerPhotos[viewerIndex];
+    const photoId = photo && typeof viewerPhotoFileId === 'function' ? viewerPhotoFileId(photo.url) : '';
+    if (photoInfo && photoInfo.getClientRects().length > 0 && photoId) return { view: 'photo', id: photoId };
+
+    const reportOverlay = document.getElementById('packageManagerOverlay');
+    if (isOpen(reportOverlay) && typeof packageEntry !== 'undefined' && packageEntry && packageEntry.id) {
+      return { view: 'report', id: packageEntry.id };
     }
-    updateLabels();
+    if (isOpen(document.getElementById('galleryModalOverlay'))) {
+      return { view: 'photos', pageNo: typeof galleryCurrentPage !== 'undefined' ? galleryCurrentPage || 1 : 1 };
+    }
+    if (isOpen(document.getElementById('reportsModalOverlay'))) {
+      return { view: 'reports', pageNo: typeof currentPage !== 'undefined' ? currentPage || 1 : 1 };
+    }
+    if (isOpen(document.getElementById('todoModalOverlay'))) return { view: 'todo' };
+    return { view: 'home' };
   }
-  function updateLabels() {
-    [['shareTodoPage','page'],['shareReportsPage','page'],['sharePhotosPage','page'],['shareReport','report'],['sharePhoto','photo']].forEach(([id,key]) => {
-      const button = document.getElementById(id); if (button) { button.textContent = text(key); button.title = text(key).replace(/^🔗\s*/, ''); }
-    });
+
+  function addressFor(route) {
+    const url = new URL(window.location.href);
+    ['view', 'pageNo', 'id'].forEach(key => url.searchParams.delete(key));
+    if (route.view !== 'home') url.searchParams.set('view', route.view);
+    if (route.pageNo && route.pageNo > 1) url.searchParams.set('pageNo', String(route.pageNo));
+    if (route.id) url.searchParams.set('id', String(route.id));
+    return url.pathname + url.search + url.hash;
   }
+
+  function syncAddress(replace) {
+    if (applyingAddress) return;
+    const next = addressFor(visibleRoute());
+    const current = window.location.pathname + window.location.search + window.location.hash;
+    if (next === current) return;
+    const method = replace ? 'replaceState' : 'pushState';
+    window.history[method]({ nticReportView: true }, '', next);
+  }
+
+  function syncSoon(replace) { window.setTimeout(() => syncAddress(!!replace), 0); }
+
+  function hook(name) {
+    const original = window[name];
+    if (typeof original !== 'function' || original.__addressSyncWrapped) return;
+    const wrapped = function(...args) {
+      const result = original.apply(this, args);
+      syncSoon(false);
+      return result;
+    };
+    wrapped.__addressSyncWrapped = true;
+    window[name] = wrapped;
+  }
+
   async function openReport(id) {
-    const result = await menuRpc('getJournalPackage', id); if (!result || !result.success || !result.report) return;
-    openReportsModal(false); packageLoadSequence++; packageBusy = false; packageEntry = Object.assign({}, result.report); if (!packageEntry.id) packageEntry.id = id;
-    packagePhotos = result.photos || []; packageHistory = result.history || []; packageLoaded = true; packageManage = true; updatePackageLabels(); updateReportsControls();
-    document.getElementById('packageManagerDescription').textContent = packageReportLabel(packageEntry); document.getElementById('packageManagerError').textContent = '';
-    prepareInlineManager(); document.getElementById('packageManagerOverlay').hidden = false; syncReportsScrollLock(); renderPackagePhotos(); renderManagedHistory(); updateReportsControls(); setupReportEditor();
+    const result = await menuRpc('getJournalPackage', id);
+    if (!result || !result.success || !result.report) return;
+    openReportsModal(false);
+    packageLoadSequence++;
+    packageBusy = false;
+    packageEntry = Object.assign({}, result.report);
+    if (!packageEntry.id) packageEntry.id = id;
+    packagePhotos = result.photos || [];
+    packageHistory = result.history || [];
+    packageLoaded = true;
+    packageManage = true;
+    updatePackageLabels();
+    updateReportsControls();
+    document.getElementById('packageManagerDescription').textContent = packageReportLabel(packageEntry);
+    document.getElementById('packageManagerError').textContent = '';
+    prepareInlineManager();
+    document.getElementById('packageManagerOverlay').hidden = false;
+    syncReportsScrollLock();
+    renderPackagePhotos();
+    renderManagedHistory();
+    updateReportsControls();
+    setupReportEditor();
   }
-  async function openSharedView() {
-    if (routeHandled || !params.has('view')) return; routeHandled = true;
-    const view = params.get('view'), pageNo = Math.max(1, Math.min(9999, Number.parseInt(params.get('pageNo') || '1', 10) || 1));
+
+  function closeViewsForNavigation() {
+    document.querySelectorAll('#todoModalOverlay .gallery-modal-close-btn, #reportsModalOverlay .gallery-modal-close-btn, #galleryModalOverlay .gallery-modal-close-btn, #packageManagerOverlay .gallery-modal-close-btn').forEach(button => button.click());
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  }
+
+  async function applyAddressRoute() {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    const pageNo = Math.max(1, Math.min(9999, Number.parseInt(params.get('pageNo') || '1', 10) || 1));
+    const id = params.get('id');
+    applyingAddress = true;
     try {
-      if (view === 'report' && params.get('id')) await openReport(params.get('id'));
-      else if (view === 'photo' && params.get('id')) { const result = await menuRpc('getJournalFocusedPhoto', params.get('id')); if (result && result.success && result.photos && result.photos.length) openPhotoViewer(result.photos, result.index || 0); }
-      else if (view === 'reports') { openReportsModal(true); if (pageNo > 1) { currentPage = pageNo; loadJurnalPage(true); } }
-      else if (view === 'photos') { openGalleryModal(); if (pageNo > 1) { galleryCurrentPage = pageNo; loadGalleryPage(pageNo); } }
-      else if (view === 'todo') openTodoModal();
-      else if (view === 'home') window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (error) { console.error('Could not open shared view:', error); }
-  }
-  function installRoute() {
-    const original = window.applyJurnalPageData;
-    if (typeof original === 'function' && !original.__shareRouteWrapped) {
-      const wrapped = function(...args) { const result = original.apply(this, args); window.setTimeout(openSharedView, 0); return result; };
-      wrapped.__shareRouteWrapped = true; window.applyJurnalPageData = wrapped;
+      closeViewsForNavigation();
+      if (view === 'report' && id) await openReport(id);
+      else if (view === 'photo' && id) {
+        const result = await menuRpc('getJournalFocusedPhoto', id);
+        if (result && result.success && result.photos && result.photos.length) openPhotoViewer(result.photos, result.index || 0);
+      } else if (view === 'reports') {
+        openReportsModal(true);
+        if (pageNo > 1) { currentPage = pageNo; loadJurnalPage(true); }
+      } else if (view === 'photos') {
+        openGalleryModal();
+        if (pageNo > 1) { galleryCurrentPage = pageNo; loadGalleryPage(pageNo); }
+      } else if (view === 'todo') openTodoModal();
+      routeHandled = true;
+    } catch (error) {
+      console.error('Could not open address-linked view:', error);
+    } finally {
+      window.setTimeout(() => { applyingAddress = false; syncAddress(true); }, 0);
     }
   }
-  const style = document.createElement('style'); style.textContent = '.report-share-link{white-space:nowrap;flex:0 0 auto;margin-inline-start:6px}#sharePhoto{margin-top:8px}'; document.head.append(style);
-  installShareButtons(); installRoute(); window.addEventListener('report-language-change', updateLabels);
+
+  function installRouteHook() {
+    const original = window.applyJurnalPageData;
+    if (typeof original === 'function' && !original.__addressRouteWrapped) {
+      const wrapped = function(...args) {
+        const result = original.apply(this, args);
+        if (!routeHandled && new URLSearchParams(window.location.search).has('view')) window.setTimeout(applyAddressRoute, 0);
+        return result;
+      };
+      wrapped.__addressRouteWrapped = true;
+      window.applyJurnalPageData = wrapped;
+    }
+  }
+
+  ['openTodoModal', 'openReportsModal', 'openGalleryModal', 'openPhotoViewer', 'loadJurnalPage', 'loadGalleryPage'].forEach(hook);
+  installRouteHook();
+  const observer = new MutationObserver(() => syncSoon(false));
+  observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'style', 'class', 'aria-hidden'] });
+  window.addEventListener('popstate', () => { routeHandled = false; applyAddressRoute(); });
+  if (new URLSearchParams(window.location.search).has('view')) window.setTimeout(() => { if (!routeHandled) applyAddressRoute(); }, 1200);
 })();
