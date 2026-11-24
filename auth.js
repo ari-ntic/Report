@@ -51,7 +51,7 @@
   function accountMenu(user){
     document.getElementById('reportAccountMenu')?.remove();
     const host=document.querySelector('.header-card');if(!host)return;
-    const wrap=document.createElement('div');wrap.id='reportAccountMenu';wrap.style.cssText='position:relative;flex:0 0 auto;z-index:15001';
+    const wrap=document.createElement('div');wrap.id='reportAccountMenu';wrap.style.cssText='position:relative;flex:0 0 auto;z-index:30001';
     const trigger=document.createElement('button');trigger.type='button';trigger.id='reportAccountMenuButton';trigger.className='report-account-trigger';trigger.setAttribute('aria-haspopup','true');trigger.setAttribute('aria-expanded','false');
     trigger.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>';
     const triggerLabel=document.createElement('span');triggerLabel.id='reportAccountMenuLabel';triggerLabel.textContent=typeof currentLang!=='undefined'&&currentLang==='en'?'Menu':'メニュー';
@@ -87,7 +87,7 @@
     syncMenuLanguage();
     function close(){menu.hidden=true;trigger.setAttribute('aria-expanded','false');if(accountOutsideHandler){document.removeEventListener('click',accountOutsideHandler);accountOutsideHandler=null;}}
     trigger.onclick=()=>{const opening=menu.hidden;menu.hidden=!opening;trigger.setAttribute('aria-expanded',String(opening));if(opening){accountOutsideHandler=event=>{if(!wrap.contains(event.target))close();};setTimeout(()=>document.addEventListener('click',accountOutsideHandler),0);}};
-    wrap.append(trigger,menu);const actions=document.getElementById('headerActions')||host;actions.append(wrap);
+    wrap.append(trigger,menu);const actions=document.getElementById('headerActions')||host;if(languageButton&&languageButton.parentElement===actions)languageButton.after(wrap);else actions.append(wrap);
     window.dispatchEvent(new Event('resize'));
     if(user.role==='admin'&&new URL(location.href).searchParams.get('access')==='1')openAccessPanel();
   }
