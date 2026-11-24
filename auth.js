@@ -7,14 +7,14 @@
     dialog=document.createElement('section');dialog.id='reportLogin';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','reportLoginTitle');
     dialog.style.cssText='position:fixed;inset:0;z-index:30000;background:#f8fafc;display:grid;place-items:center;padding:20px;font:15px/1.6 Inter,system-ui;color:#0f172a';
     const card=document.createElement('div');card.style.cssText='width:min(100%,420px);padding:28px;background:white;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 8px 24px #0f172a0d;text-align:center';
-    card.innerHTML='<h1 id="reportLoginTitle" style="font-size:20px;margin:0 0 12px">NTIC 報告記録</h1><p>Googleアカウントでログインしてください。初めての方はログイン後にアクセスを申請できます。<br>Sign in with Google. New users can request access after signing in.</p><div id="reportGoogleButton" style="display:flex;justify-content:center;min-height:44px"></div><p id="reportLoginMessage" role="status" style="font-size:13px;color:#64748b"></p><button id="reportLoginReload" type="button" hidden style="min-height:44px;margin:0 0 12px;padding:8px 16px">再読み込み / Reload</button><br><a href="privacy.html" style="font-size:12px;color:#64748b">プライバシー / Privacy</a>';
+    card.innerHTML='<h1 id="reportLoginTitle" style="font-size:20px;margin:0 0 12px">NTIC 報告記録</h1><p>Googleアカウントでログインしてください。初めての方はログイン後にアクセスを申請できます。<br>Sign in with Google. New users can request access after signing in.</p><div id="reportGoogleButton" style="display:flex;justify-content:center;min-height:44px"></div><div id="reportLoginStatus" style="min-height:28px;margin:10px 0;display:flex;align-items:center;justify-content:center;gap:9px;color:#64748b"><span id="reportLoginSpinner" aria-hidden="true" hidden style="width:16px;height:16px;flex:0 0 16px;border:2px solid #cbd5e1;border-top-color:#14b8a6;border-radius:50%;animation:reportAuthSpin .8s linear infinite"></span><p id="reportLoginMessage" role="status" aria-live="polite" style="font-size:13px;margin:0"></p></div><style>@keyframes reportAuthSpin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){#reportLoginSpinner{animation:none}}</style><button id="reportLoginReload" type="button" hidden style="min-height:44px;margin:0 0 12px;padding:8px 16px">再読み込み / Reload</button><br><a href="privacy.html" style="font-size:12px;color:#64748b">プライバシー / Privacy</a>';
     card.querySelector('#reportLoginReload').onclick=()=>location.reload();
     const request=document.createElement('button');request.id='reportRequestAccess';request.type='button';request.hidden=true;request.textContent='アクセス申請 / Request access';request.style.cssText='min-height:44px;padding:10px 18px;margin:8px';
-    request.onclick=async()=>{request.disabled=true;try{const state=await accessTransport('requestReportAccess',[],pendingToken);showPending(state);if(state.notificationSent===false)message('申請は保存されましたが、管理者への通知を送信できませんでした。5分後にもう一度申請してください。 / Your request was saved, but the notification could not be sent. Try requesting again in 5 minutes.');}catch(error){message('アクセスを申請できませんでした。時間をおいて再度お試しいただくか、管理者にお問い合わせください。 / Could not request access. Try again later or contact the administrator.',true);}finally{request.disabled=false;}};
+    request.onclick=async()=>{request.disabled=true;message('申請を送信しています… / Sending your request…',false,true);try{const state=await accessTransport('requestReportAccess',[],pendingToken);showPending(state);if(state.notificationSent===false)message('申請は保存されましたが、管理者への通知を送信できませんでした。5分後にもう一度申請してください。 / Your request was saved, but the notification could not be sent. Try requesting again in 5 minutes.');}catch(error){message('アクセスを申請できませんでした。時間をおいて再度お試しいただくか、管理者にお問い合わせください。 / Could not request access. Try again later or contact the administrator.',true);}finally{request.disabled=false;}};
     card.querySelector('#reportLoginMessage').before(request);
     dialog.append(card);document.body.append(dialog);return dialog;
   }
-  function message(text,retry=false){const box=overlay();box.querySelector('#reportLoginMessage').textContent=text;box.querySelector('#reportLoginReload').hidden=!retry;}
+  function message(text,retry=false,loading=false){const box=overlay();box.querySelector('#reportLoginMessage').textContent=text;box.querySelector('#reportLoginSpinner').hidden=!loading;box.querySelector('#reportLoginStatus').style.visibility=text?'visible':'hidden';box.querySelector('#reportLoginReload').hidden=!retry;}
   function lock(){token='';expires=0;pendingToken='';clearTimeout(pollTimer);document.getElementById('reportAccountMenu')?.remove();if(accountOutsideHandler){document.removeEventListener('click',accountOutsideHandler);accountOutsideHandler=null;}document.getElementById('reportAccessAdminButton')?.remove();document.getElementById('reportAccessPanel')?.remove();const box=overlay();box.querySelector('#reportRequestAccess').hidden=true;box.hidden=false;box.style.display='grid';document.querySelector('.container')?.setAttribute('inert','');}
   function clearSavedSession(){try{localStorage.removeItem('nticReportSession');}catch(_){}}
   function finishSignIn(user,sessionToken,expiresAt){
@@ -40,7 +40,7 @@
     try{await credential({credential:pendingToken});}finally{checking=false;}
   }
   async function credential(response){
-    message('ログインを確認しています… / Verifying your account…');
+    message('ログインを確認しています… / Verifying your account…',false,true);
     try{
       const user=await validator(response.credential);
       if(user.role==='pending'){token='';expires=0;pendingToken=response.credential;showPending(user);return;}
@@ -74,8 +74,17 @@
     new MutationObserver(syncMenuButtonStyle).observe(trigger,{attributes:true,attributeFilter:['class']});
     const menu=document.createElement('div');menu.hidden=true;menu.setAttribute('role','menu');menu.style.cssText='position:absolute;right:0;top:calc(100% + 8px);width:min(280px,calc(100vw - 32px));padding:10px;background:#fff;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 8px 28px #0002;color:#0f172a';
     function item(label,action){const button=document.createElement('button');button.type='button';button.setAttribute('role','menuitem');button.textContent=label;button.style.cssText='display:block;width:100%;min-height:44px;text-align:left;padding:9px 12px;border:0;border-radius:8px;background:#fff;color:#0f172a;font:inherit;cursor:pointer';button.onmouseenter=()=>button.style.background='#f1f5f9';button.onmouseleave=()=>button.style.background='#fff';button.onclick=()=>{close();action();};menu.append(button);return button;}
-    if(user.role==='admin')item('Pengguna / 利用者',openAccessPanel);
-    item('ログアウト / Log out',()=>window.ReportAuth.signOut());
+    const adminMenuItem=user.role==='admin'?item(typeof currentLang!=='undefined'&&currentLang==='en'?'Users':'利用者',openAccessPanel):null;
+    const logoutMenuItem=item(typeof currentLang!=='undefined'&&currentLang==='en'?'Log out':'ログアウト',()=>window.ReportAuth.signOut());
+    function syncMenuLanguage(){
+      const english=typeof currentLang!=='undefined'&&currentLang==='en';
+      const menuLabel=english?'Menu':'メニュー';
+      triggerLabel.textContent=menuLabel;trigger.setAttribute('aria-label',menuLabel);
+      if(adminMenuItem)adminMenuItem.textContent=english?'Users':'利用者';
+      logoutMenuItem.textContent=english?'Log out':'ログアウト';
+    }
+    window.addEventListener('report-language-change',syncMenuLanguage);
+    syncMenuLanguage();
     function close(){menu.hidden=true;trigger.setAttribute('aria-expanded','false');if(accountOutsideHandler){document.removeEventListener('click',accountOutsideHandler);accountOutsideHandler=null;}}
     trigger.onclick=()=>{const opening=menu.hidden;menu.hidden=!opening;trigger.setAttribute('aria-expanded',String(opening));if(opening){accountOutsideHandler=event=>{if(!wrap.contains(event.target))close();};setTimeout(()=>document.addEventListener('click',accountOutsideHandler),0);}};
     wrap.append(trigger,menu);const actions=document.getElementById('headerActions')||host;actions.append(wrap);
@@ -115,7 +124,7 @@
     if(!id){message('Googleログインはまだ設定されていません。管理者にお問い合わせください。 / Google sign-in is not configured. Please contact the administrator.',true);return;}
     let saved='';try{saved=localStorage.getItem('nticReportSession')||'';}catch(_){}
     if(saved&&validator){
-      message('セッションを確認しています… / Restoring your session…');
+      message('セッションを確認しています… / Restoring your session…',false,true);
       validator(saved).then(function(user){
         if(user&&user.sessionToken&&user.role!=='pending'){finishSignIn(user,user.sessionToken,user.expiresAt);return;}
         clearSavedSession();loadGoogleSignIn(id);
@@ -128,7 +137,7 @@
     loadGoogleSignIn(id);
   }
   function loadGoogleSignIn(id){
-    if(initializing)return;initializing=true;
+    if(initializing)return;message('',false,false);initializing=true;
     const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;
     script.onerror=()=>{initializing=false;message('Googleログインを読み込めませんでした。再読み込みしてください。 / Could not load Google sign-in. Please reload the page.',true);};
     script.onload=()=>{
