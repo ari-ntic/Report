@@ -1,11 +1,29 @@
-/* Keep the browser address in sync with the visible app view. */
+/* Keep the address bar in sync with the visible view and report filters. */
 (() => {
   'use strict';
   let applyingAddress = false;
   let routeHandled = false;
+  let routeApplying = false;
+
+  const FILTER_KEYS = ['company', 'category', 'urgency', 'search'];
+  const MANAGED_KEYS = ['view', 'pageNo', 'id', ...FILTER_KEYS];
 
   function isOpen(el) {
     return !!el && !el.hidden && el.getAttribute('aria-hidden') !== 'true' && getComputedStyle(el).display !== 'none';
+  }
+
+  function cleanFilter(value) {
+    const text = String(value == null ? '' : value).trim();
+    return !text || text === 'ALL' ? '' : text;
+  }
+
+  function readFilters() {
+    const company = cleanFilter(document.getElementById('filterCompany')?.value);
+    const category = cleanFilter(document.getElementById('filterCategory')?.value);
+    const searchBox = document.getElementById('filterSearch');
+    const search = String(searchBox ? searchBox.value : (typeof currentSearchTerm !== 'undefined' ? currentSearchTerm : '')).trim();
+    const urgency = cleanFilter(typeof currentUrgencyFilter !== 'undefined' ? currentUrgencyFilter : '');
+    return { company, category, urgency, search };
   }
 
   function visibleRoute() {
@@ -16,13 +34,13 @@
 
     const reportOverlay = document.getElementById('packageManagerOverlay');
     if (isOpen(reportOverlay) && typeof packageEntry !== 'undefined' && packageEntry && packageEntry.id) {
-      return { view: 'report', id: packageEntry.id };
+      return Object.assign({ view: 'report', id: packageEntry.id, pageNo: typeof currentPage !== 'undefined' ? currentPage || 1 : 1 }, readFilters());
     }
     if (isOpen(document.getElementById('galleryModalOverlay'))) {
       return { view: 'photos', pageNo: typeof galleryCurrentPage !== 'undefined' ? galleryCurrentPage || 1 : 1 };
     }
     if (isOpen(document.getElementById('reportsModalOverlay'))) {
-      return { view: 'reports', pageNo: typeof currentPage !== 'undefined' ? currentPage || 1 : 1 };
+      return Object.assign({ view: 'reports', pageNo: typeof currentPage !== 'undefined' ? currentPage || 1 : 1 }, readFilters());
     }
     if (isOpen(document.getElementById('todoModalOverlay'))) return { view: 'todo' };
     return { view: 'home' };
@@ -30,10 +48,16 @@
 
   function addressFor(route) {
     const url = new URL(window.location.href);
-    ['view', 'pageNo', 'id'].forEach(key => url.searchParams.delete(key));
+    MANAGED_KEYS.forEach(key => url.searchParams.delete(key));
     if (route.view !== 'home') url.searchParams.set('view', route.view);
     if (route.pageNo && route.pageNo > 1) url.searchParams.set('pageNo', String(route.pageNo));
     if (route.id) url.searchParams.set('id', String(route.id));
+    if (route.view === 'reports' || route.view === 'report') {
+      FILTER_KEYS.forEach(key => {
+        const value = cleanFilter(route[key]);
+        if (value) url.searchParams.set(key, value);
+      });
+    }
     return url.pathname + url.search + url.hash;
   }
 
@@ -42,22 +66,45 @@
     const next = addressFor(visibleRoute());
     const current = window.location.pathname + window.location.search + window.location.hash;
     if (next === current) return;
-    const method = replace ? 'replaceState' : 'pushState';
-    window.history[method]({ nticReportView: true }, '', next);
+    window.history[replace ? 'replaceState' : 'pushState']({ nticReportView: true }, '', next);
   }
 
   function syncSoon(replace) { window.setTimeout(() => syncAddress(!!replace), 0); }
 
-  function hook(name) {
+  function hook(name, replace) {
     const original = window[name];
     if (typeof original !== 'function' || original.__addressSyncWrapped) return;
     const wrapped = function(...args) {
       const result = original.apply(this, args);
-      syncSoon(false);
+      syncSoon(!!replace);
       return result;
     };
     wrapped.__addressSyncWrapped = true;
     window[name] = wrapped;
+  }
+
+  function setSelectValue(id, value) {
+    const select = document.getElementById(id);
+    if (!select) return;
+    const wanted = value || 'ALL';
+    if (![...select.options].some(option => option.value === wanted)) {
+      select.add(new Option(wanted, wanted));
+    }
+    select.value = wanted;
+  }
+
+  function applyFilters(params) {
+    const company = params.get('company') || '';
+    const category = params.get('category') || '';
+    const urgency = params.get('urgency') || 'ALL';
+    const search = params.get('search') || '';
+    setSelectValue('filterCompany', company);
+    setSelectValue('filterCategory', category);
+    const searchBox = document.getElementById('filterSearch');
+    if (searchBox) searchBox.value = search;
+    if (typeof currentSearchTerm !== 'undefined') currentSearchTerm = search;
+    if (typeof setQuickPill === 'function') setQuickPill(urgency);
+    else if (typeof currentUrgencyFilter !== 'undefined') currentUrgencyFilter = urgency;
   }
 
   async function openReport(id) {
@@ -91,6 +138,9 @@
   }
 
   async function applyAddressRoute() {
+    if (routeApplying) return;
+    routeApplying = true;
+    routeHandled = true;
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
     const pageNo = Math.max(1, Math.min(9999, Number.parseInt(params.get('pageNo') || '1', 10) || 1));
@@ -98,22 +148,30 @@
     applyingAddress = true;
     try {
       closeViewsForNavigation();
-      if (view === 'report' && id) await openReport(id);
-      else if (view === 'photo' && id) {
+      if (view === 'report' && id) {
+        applyFilters(params);
+        if (pageNo > 1 && typeof currentPage !== 'undefined') currentPage = pageNo;
+        await openReport(id);
+      } else if (view === 'photo' && id) {
         const result = await menuRpc('getJournalFocusedPhoto', id);
         if (result && result.success && result.photos && result.photos.length) openPhotoViewer(result.photos, result.index || 0);
       } else if (view === 'reports') {
-        openReportsModal(true);
-        if (pageNo > 1) { currentPage = pageNo; loadJurnalPage(true); }
+        applyFilters(params);
+        openReportsModal(false);
+        if (typeof currentPage !== 'undefined') currentPage = pageNo;
+        loadJurnalPage(true);
       } else if (view === 'photos') {
         openGalleryModal();
         if (pageNo > 1) { galleryCurrentPage = pageNo; loadGalleryPage(pageNo); }
       } else if (view === 'todo') openTodoModal();
-      routeHandled = true;
     } catch (error) {
       console.error('Could not open address-linked view:', error);
     } finally {
-      window.setTimeout(() => { applyingAddress = false; syncAddress(true); }, 0);
+      window.setTimeout(() => {
+        applyingAddress = false;
+        routeApplying = false;
+        syncAddress(true);
+      }, 0);
     }
   }
 
@@ -130,10 +188,23 @@
     }
   }
 
-  ['openTodoModal', 'openReportsModal', 'openGalleryModal', 'openPhotoViewer', 'loadJurnalPage', 'loadGalleryPage'].forEach(hook);
+  ['openTodoModal', 'openReportsModal', 'openGalleryModal', 'openPhotoViewer', 'loadJurnalPage', 'loadGalleryPage'].forEach(name => hook(name, false));
+  ['closePackageManager', 'closeReportsModal', 'closeGalleryModal', 'closeTodoModal', 'closePhotoViewer'].forEach(name => hook(name, true));
+  ['onFilterChanged', 'filterByTrainee', 'filterByCompany', 'filterByCategory', 'setQuickPill'].forEach(name => hook(name, true));
   installRouteHook();
+
+  ['filterCompany', 'filterCategory'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', () => syncSoon(true));
+  });
+  const searchBox = document.getElementById('filterSearch');
+  if (searchBox) {
+    searchBox.addEventListener('input', () => syncSoon(true));
+    searchBox.addEventListener('change', () => syncSoon(true));
+  }
+
   const observer = new MutationObserver(() => syncSoon(false));
   observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'style', 'class', 'aria-hidden'] });
-  window.addEventListener('popstate', () => { routeHandled = false; applyAddressRoute(); });
+  window.addEventListener('popstate', () => { routeHandled = false; routeApplying = false; applyAddressRoute(); });
   if (new URLSearchParams(window.location.search).has('view')) window.setTimeout(() => { if (!routeHandled) applyAddressRoute(); }, 1200);
 })();
