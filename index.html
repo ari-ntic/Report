@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <script src="config.js?v=5"></script>
-  <script src="auth.js?v=19"></script>
+  <script src="auth.js?v=21"></script>
   <script src="rpc.js?v=4"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3432,7 +3432,10 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
 
     document.getElementById('langToggleLabel').innerText = lang === 'ja' ? '日本語' : 'English';
     const accountLabel = document.getElementById('reportAccountMenuLabel');
-    if (accountLabel) accountLabel.textContent = lang === 'ja' ? 'メニュー' : 'Account';
+    if (accountLabel) accountLabel.textContent = lang === 'ja' ? 'メニュー' : 'Menu';
+    const accountButton = document.getElementById('reportAccountMenuButton');
+    if (accountButton) accountButton.setAttribute('aria-label', lang === 'ja' ? 'メニュー' : 'Menu');
+    window.dispatchEvent(new Event('report-language-change'));
     document.getElementById('jpExampleTitle').innerText = t.jpExampleTitle;
     document.getElementById('jpExampleBody').innerHTML = t.jpExampleBody;
 
