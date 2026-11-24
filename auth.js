@@ -48,17 +48,17 @@
     const host=document.querySelector('.header-card');if(!host)return;
     const wrap=document.createElement('div');wrap.id='reportAccountMenu';wrap.style.cssText='position:relative;flex:0 0 auto;z-index:15001';
     const trigger=document.createElement('button');trigger.type='button';trigger.id='reportAccountMenuButton';trigger.className='report-account-trigger';trigger.setAttribute('aria-haspopup','true');trigger.setAttribute('aria-expanded','false');
-    const avatar=document.createElement('span');avatar.className='report-account-avatar';avatar.setAttribute('aria-hidden','true');avatar.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.7-3.4 3.2-5.2 7-5.2s6.3 1.8 7 5.2"></path></svg>';
-    const triggerLabel=document.createElement('span');triggerLabel.id='reportAccountMenuLabel';triggerLabel.textContent=typeof currentLang!=='undefined'&&currentLang==='en'?'Account':'メニュー';
-    trigger.setAttribute('aria-label',typeof currentLang!=='undefined'&&currentLang==='en'?'Account menu':'アカウントメニュー');
-    trigger.append(avatar,triggerLabel);
+    trigger.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>';
+    const triggerLabel=document.createElement('span');triggerLabel.id='reportAccountMenuLabel';triggerLabel.textContent=typeof currentLang!=='undefined'&&currentLang==='en'?'Menu':'メニュー';
+    trigger.setAttribute('aria-label',typeof currentLang!=='undefined'&&currentLang==='en'?'Menu':'メニュー');
+    trigger.append(triggerLabel);
     const menu=document.createElement('div');menu.hidden=true;menu.setAttribute('role','menu');menu.style.cssText='position:absolute;right:0;top:calc(100% + 8px);width:min(280px,calc(100vw - 32px));padding:10px;background:#fff;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 8px 28px #0002;color:#0f172a';
     function item(label,action){const button=document.createElement('button');button.type='button';button.setAttribute('role','menuitem');button.textContent=label;button.style.cssText='display:block;width:100%;min-height:44px;text-align:left;padding:9px 12px;border:0;border-radius:8px;background:#fff;color:#0f172a;font:inherit;cursor:pointer';button.onmouseenter=()=>button.style.background='#f1f5f9';button.onmouseleave=()=>button.style.background='#fff';button.onclick=()=>{close();action();};menu.append(button);return button;}
     if(user.role==='admin')item('Pengguna / 利用者',openAccessPanel);
     item('ログアウト / Log out',()=>window.ReportAuth.signOut());
     function close(){menu.hidden=true;trigger.setAttribute('aria-expanded','false');if(accountOutsideHandler){document.removeEventListener('click',accountOutsideHandler);accountOutsideHandler=null;}}
     trigger.onclick=()=>{const opening=menu.hidden;menu.hidden=!opening;trigger.setAttribute('aria-expanded',String(opening));if(opening){accountOutsideHandler=event=>{if(!wrap.contains(event.target))close();};setTimeout(()=>document.addEventListener('click',accountOutsideHandler),0);}};
-    wrap.append(trigger,menu);const actions=document.getElementById('headerActions')||host,languageButton=document.getElementById('langToggleBtn');actions.insertBefore(wrap,languageButton||null);
+    wrap.append(trigger,menu);const actions=document.getElementById('headerActions')||host;actions.append(wrap);
     window.dispatchEvent(new Event('resize'));
     if(user.role==='admin'&&new URL(location.href).searchParams.get('access')==='1')openAccessPanel();
   }
