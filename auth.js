@@ -1,4 +1,3 @@
-
 /*
  * NTIC Report Login
  * Google Sign-In
@@ -151,8 +150,8 @@
           message(
             '申請は保存されましたが、管理者への通知を送信できませんでした。' +
             '5分後にもう一度申請してください。 / ' +
-            'Your request was saved, but the notification could not ' +
-            'be sent. Try requesting again in 5 minutes.'
+            'Your request was saved, but the notification could ' +
+            'not be sent. Try requesting again in 5 minutes.'
           );
         }
       } catch (error) {
@@ -207,10 +206,9 @@
 
   function showPending(user) {
     const request = overlay().querySelector('#reportRequestAccess');
-
     const status = String(user?.status || '').toLowerCase();
 
-    // Revoked, rejected and unregistered users may request again.
+    // Users awaiting approval cannot submit a second request.
     request.hidden = status === 'pending';
 
     if (status === 'pending') {
@@ -224,24 +222,11 @@
         'アクセスは許可されていません。再度アクセスを申請できます。 / ' +
         'Access has not been granted. You can request access again.'
       );
-    } else if (
-      status === 'revoked' ||
-      status === 'deleted' ||
-      status === 'inactive'
-    ) {
-      message(
-        '以前のアクセス権限は取り消されています。' +
-        '「アクセス申請」から再申請できます。 / ' +
-        'Your previous access was revoked. ' +
-        'Select Request access to apply again.'
-      );
     } else {
       message(
-        (user?.email || '') +
-        ' のアクセスはまだ許可されていません。' +
-        '「アクセス申請」を押してください。 / ' +
-        'This account is not yet authorized. ' +
-        'Select Request access to contact the administrator.'
+        'このGoogleアカウントはまだ許可されていません。「アクセス申請」を押してください。 / ' +
+        'This Google account is not yet authorized. Select Request access ' +
+        'to contact the administrator.'
       );
     }
 
@@ -288,10 +273,7 @@
         user?.role === 'admin' || user?.role === 'member';
 
       // Do not authorize revoked or pending accounts.
-      if (
-        !authorizedRole ||
-        blockedStatuses.has(status)
-      ) {
+      if (!authorizedRole || blockedStatuses.has(status)) {
         token = '';
         expires = 0;
         pendingToken = response.credential;
@@ -607,8 +589,7 @@
       message(
         'Googleログインはまだ設定されていません。' +
         '管理者にお問い合わせください。 / ' +
-        'Google sign-in is not configured. ' +
-        'Please contact the administrator.',
+        'Google sign-in is not configured. Please contact the administrator.',
         true
       );
       return;
@@ -632,19 +613,23 @@
     };
 
     script.onload = () => {
+      google.accounts.id.disableAutoSelect();
+
       google.accounts.id.initialize({
         client_id: id,
         callback: credential,
         auto_select: false,
         ux_mode: 'popup',
-        itp_support: true
+        itp_support: true,
+        use_fedcm_for_button: true,
+        button_auto_select: false
       });
 
       google.accounts.id.renderButton(
         document.getElementById('reportGoogleButton'),
         {
           theme: 'outline',
-          size: 'large',
+          size: 'medium',
           text: 'signin_with',
           shape: 'rectangular'
         }
