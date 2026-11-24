@@ -62,7 +62,7 @@
   }
 
   function syncAddress(replace) {
-    if (applyingAddress) return;
+    const loginOverlay = document.getElementById('reportLogin');    if (applyingAddress || isOpen(loginOverlay)) return;
     const next = addressFor(visibleRoute());
     const current = window.location.pathname + window.location.search + window.location.hash;
     if (next === current) return;
@@ -205,6 +205,6 @@
 
   const observer = new MutationObserver(() => syncSoon(false));
   observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'style', 'class', 'aria-hidden'] });
-  window.addEventListener('popstate', () => { routeHandled = false; routeApplying = false; applyAddressRoute(); });
-  if (new URLSearchParams(window.location.search).has('view')) window.setTimeout(() => { if (!routeHandled) applyAddressRoute(); }, 1200);
+  window.addEventListener('report-login', () => { if (new URLSearchParams(window.location.search).has('view')) { routeHandled = false; routeApplying = false; window.setTimeout(applyAddressRoute, 0); } }); window.addEventListener('popstate', () => { routeHandled = false; routeApplying = false; applyAddressRoute(); });
+  if (new URLSearchParams(window.location.search).has('view')) window.setTimeout(() => { const loginOverlay = document.getElementById('reportLogin'); if (!routeHandled && !isOpen(loginOverlay)) applyAddressRoute(); }, 1200);
 })();
