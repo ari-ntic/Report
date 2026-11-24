@@ -105,82 +105,88 @@
 
 
   renderEditorPhotos = function() {
-    if (!reportEditorState) return;
+  if (!reportEditorState) return;
 
-    const box = document.getElementById('editorPhotos');
-    if (!box) return;
+  // Dibuat sebelum render pertama editor.
+  reportEditorState.newPhotos =
+    Array.isArray(reportEditorState.newPhotos)
+      ? reportEditorState.newPhotos
+      : [];
 
-    box.replaceChildren();
+  const box = document.getElementById('editorPhotos');
+  if (!box) return;
 
-    reportEditorState.photos.forEach(function(photo) {
-      const tile = document.createElement('div');
-      tile.className = 'editor-photo';
+  box.replaceChildren();
 
-      const thumb = document.createElement('button');
-      thumb.type = 'button';
-      thumb.className = 'editor-thumb';
+  reportEditorState.photos.forEach(function(photo) {
+    const tile = document.createElement('div');
+    tile.className = 'editor-photo';
 
-      const image = document.createElement('img');
-      image.src = photo.url;
-      image.alt = editorLabel('報告の写真', 'Report photo');
-      thumb.append(image);
-      thumb.onclick = () => openEditorPhoto(photo);
+    const thumb = document.createElement('button');
+    thumb.type = 'button';
+    thumb.className = 'editor-thumb';
 
-      const remove = document.createElement('button');
-      remove.type = 'button';
-      remove.className = 'editor-photo-remove';
-      remove.textContent = editorLabel('削除', 'Delete');
+    const image = document.createElement('img');
+    image.src = photo.url;
+    image.alt = editorLabel('報告の写真', 'Report photo');
+    thumb.append(image);
+    thumb.onclick = () => openEditorPhoto(photo);
 
-      remove.onclick = () => {
-        reportEditorState.photos =
-          reportEditorState.photos.filter(item => item !== photo);
-        reportEditorState.removedPhotos.push(photo.id);
-        renderEditorPhotos();
-      };
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'editor-photo-remove';
+    remove.textContent = editorLabel('削除', 'Delete');
 
-      tile.append(thumb, remove);
-      box.append(tile);
-    });
+    remove.onclick = () => {
+      reportEditorState.photos =
+        reportEditorState.photos.filter(item => item !== photo);
+      reportEditorState.removedPhotos.push(photo.id);
+      renderEditorPhotos();
+    };
 
-    reportEditorState.newPhotos.forEach(function(photo) {
-      const tile = document.createElement('div');
-      tile.className = 'editor-photo';
+    tile.append(thumb, remove);
+    box.append(tile);
+  });
 
-      const thumb = document.createElement('button');
-      thumb.type = 'button';
-      thumb.className = 'editor-thumb';
+  reportEditorState.newPhotos.forEach(function(photo) {
+    const tile = document.createElement('div');
+    tile.className = 'editor-photo';
 
-      const image = document.createElement('img');
-      image.src = photo.previewUrl;
-      image.alt = editorLabel('追加する写真', 'Photo to add');
-      thumb.append(image);
-      thumb.onclick = () =>
-        window.open(photo.previewUrl, '_blank', 'noopener');
+    const thumb = document.createElement('button');
+    thumb.type = 'button';
+    thumb.className = 'editor-thumb';
 
-      const remove = document.createElement('button');
-      remove.type = 'button';
-      remove.className = 'editor-photo-remove';
-      remove.textContent = editorLabel('削除', 'Remove');
+    const image = document.createElement('img');
+    image.src = photo.previewUrl;
+    image.alt = editorLabel('追加する写真', 'Photo to add');
+    thumb.append(image);
+    thumb.onclick = () =>
+      window.open(photo.previewUrl, '_blank', 'noopener');
 
-      remove.onclick = () => {
-        reportEditorState.newPhotos =
-          reportEditorState.newPhotos.filter(item => item !== photo);
-        renderEditorPhotos();
-      };
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'editor-photo-remove';
+    remove.textContent = editorLabel('削除', 'Remove');
 
-      tile.append(thumb, remove);
-      box.append(tile);
-    });
+    remove.onclick = () => {
+      reportEditorState.newPhotos =
+        reportEditorState.newPhotos.filter(item => item !== photo);
+      renderEditorPhotos();
+    };
 
-    const count = document.getElementById('editorPhotoCount');
-    if (count) {
-      const total =
-        reportEditorState.photos.length +
-        reportEditorState.removedPhotos.length +
-        reportEditorState.newPhotos.length;
-      count.textContent = total + ' / 5';
-    }
-  };
+    tile.append(thumb, remove);
+    box.append(tile);
+  });
+
+  const count = document.getElementById('editorPhotoCount');
+  if (count) {
+    const total =
+      reportEditorState.photos.length +
+      reportEditorState.removedPhotos.length +
+      reportEditorState.newPhotos.length;
+    count.textContent = total + ' / 5';
+  }
+};
 
 
   saveReportEditor = async function() {
