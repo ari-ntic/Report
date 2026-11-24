@@ -28,7 +28,7 @@
     accountMenu(user);
   }
   function showPending(user){
-    const request=overlay().querySelector('#reportRequestAccess');request.hidden=user.status==='rejected';
+    const request=overlay().querySelector('#reportRequestAccess');request.hidden=user.status==='none';
     const googleButton=overlay().querySelector('#reportGoogleButton');if(googleButton)googleButton.hidden=user.status==='pending';
     message(user.status==='rejected'?'アクセスは許可されていません。管理者にお問い合わせください。 / Access has not been granted. Please contact the administrator.':user.status==='pending'?'管理者の承認を待っています。承認後、自動的にアプリが開きます。 / Awaiting administrator approval. The app will open automatically once approved.':user.email+' のアクセスはまだ許可されていません。「アクセス申請」を押してください。 / This account is not yet authorized. Select Request access to contact the administrator.');
     clearTimeout(pollTimer);if(user.status==='pending')pollTimer=setTimeout(checkPending,20000);
