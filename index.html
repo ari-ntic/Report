@@ -3559,7 +3559,29 @@ function changeLanguage(lang) {
     if (!name) return '';
     return String(name);
   }
-  function nationalityFlagHtml(item){ const raw=item&&(item.nationality||item.kewarganegaraan||item['国籍']||item.negara);if(!raw)return ''; const s=String(raw).normalize('NFKC').toLowerCase(),rules=[[/indonesia|インドネシア/,'🇮🇩'],[/philipp|pilipin|フィリピン/,'🇵🇭'],[/thailand|thai|タイ/,'🇹🇭'],[/vietnam|ベトナム|越南/,'🇻🇳'],[/myanmar|ミャンマー|ビルマ/,'🇲🇲'],[/cambodia|カンボジア|クメール/,'🇰🇭'],[/nepal|ネパール/,'🇳🇵'],[/laos|ラオス/,'🇱🇦'],[/china|中国/,'🇨🇳'],[/mongolia|モンゴル/,'🇲🇳'],[/bangladesh|バングラデシュ/,'🇧🇩'],[/sri lanka|スリランカ/,'🇱🇰']]; const hit=rules.find(x=>x[0].test(s));return hit?'<span class="nationality-flag" title="'+escapeHtml(raw)+'">'+hit[1]+'</span>':'';}function authorLabel(name, photo) {
+  function nationalityFlagHtml(item) {
+    const raw = item && (item.nationality || item.kewarganegaraan || item['国籍'] || item.negara);
+    if (!raw) return '';
+    const s = String(raw).normalize('NFKC').toLowerCase();
+    const flags = [
+      [/indonesia|インドネシア/, 'id', '<path fill="#e31b23" d="M0 0h30v10H0z"/><path fill="#fff" d="M0 10h30v10H0z"/>'],
+      [/philipp|pilipin|フィリピン/, 'ph', '<path fill="#0038a8" d="M0 0h30v10H0z"/><path fill="#ce1126" d="M0 10h30v10H0z"/><path fill="#fff" d="M0 0 13 10 0 20z"/><circle fill="#fcd116" cx="4" cy="10" r="1.4"/><circle fill="#fcd116" cx="8.2" cy="10" r="1"/>'],
+      [/thailand|thai|タイ/, 'th', '<path fill="#ed1c24" d="M0 0h30v3H0zM0 17h30v3H0z"/><path fill="#fff" d="M0 3h30v3H0zM0 14h30v3H0z"/><path fill="#241d4f" d="M0 6h30v8H0z"/>'],
+      [/vietnam|ベトナム|越南/, 'vn', '<path fill="#da251d" d="M0 0h30v20H0z"/><path fill="#ff0" d="m15 3 1.7 5.1h5.4l-4.4 3.2 1.7 5.1-4.4-3.2-4.4 3.2 1.7-5.1-4.4-3.2h5.4z"/>'],
+      [/myanmar|ミャンマー|ビルマ/, 'mm', '<path fill="#fecb00" d="M0 0h30v6.67H0z"/><path fill="#34b233" d="M0 6.67h30v6.66H0z"/><path fill="#ea2839" d="M0 13.33h30V20H0z"/><path fill="#fff" d="m15 3 2.1 5.2 5.6.3-4.3 3.5 1.5 5.3-4.9-3-4.9 3 1.5-5.3-4.3-3.5 5.6-.3z"/>'],
+      [/cambodia|カンボジア|クメール/, 'kh', '<path fill="#032ea1" d="M0 0h30v5H0zM0 15h30v5H0z"/><path fill="#e00025" d="M0 5h30v10H0z"/><path fill="#fff" d="M8 12h14v1H8zm2-2h10v2H10zm2-2h6v2h-6zm-1 6h8v1h-8z"/>'],
+      [/nepal|ネパール/, 'np', '<path fill="#dc143c" d="M2 1h19L6 11h12L4 22z" stroke="#003893" stroke-width="1.5"/><circle fill="#fff" cx="7" cy="8" r="1.5"/><path fill="#fff" d="m8 14 1 2 2 .3-1.5 1.4.4 2-1.9-1-1.8 1 .4-2-1.5-1.4 2-.3z"/>'],
+      [/laos|ラオス/, 'la', '<path fill="#ce1126" d="M0 0h30v5H0zM0 15h30v5H0z"/><path fill="#002868" d="M0 5h30v10H0z"/><circle fill="#fff" cx="15" cy="10" r="3.5"/>'],
+      [/china|中国/, 'cn', '<path fill="#de2910" d="M0 0h30v20H0z"/><path fill="#ffde00" d="m5 2 1 2.7 2.8.1-2.2 1.7.8 2.7L5 7.6l-2.4 1.6.8-2.7-2.2-1.7 2.8-.1z"/>'],
+      [/mongolia|モンゴル/, 'mn', '<path fill="#c4272f" d="M0 0h10v20H0zM20 0h10v20H20z"/><path fill="#015197" d="M10 0h10v20H10z"/><path fill="#f9cf02" d="M4 4h2v10H4zm-1 2h4v1H3zm1 2h2v2H4z"/>'],
+      [/bangladesh|バングラデシュ/, 'bd', '<path fill="#006a4e" d="M0 0h30v20H0z"/><circle fill="#f42a41" cx="13" cy="10" r="5"/>'],
+      [/sri lanka|スリランカ/, 'lk', '<path fill="#ffb700" d="M0 0h30v20H0z"/><path fill="#00534e" d="M1 1h4v18H1z"/><path fill="#eb7400" d="M5 1h4v18H5z"/><path fill="#8d153a" d="M10 1h19v18H10z"/><path fill="#ffb700" d="M13 4h1v12h-1zm3 0h1v12h-1z"/>']
+    ];
+    const hit = flags.find(entry => entry[0].test(s));
+    if (!hit) return '';
+    return '<span class="nationality-flag" title="' + escapeHtml(raw) + '"><svg class="nationality-flag-icon" style="display:inline-block;width:1.15em;height:.77em;vertical-align:-.08em;border:1px solid #ffffff55;border-radius:2px" viewBox="0 0 30 20" role="img" aria-label="' + hit[1].toUpperCase() + ' flag" xmlns="http://www.w3.org/2000/svg">' + hit[2] + '</svg></span>';
+  }
+  function authorLabel(name, photo) {
     if (!name) return '';
     return '<span class="content-author' + (photo ? ' photo-author' : '') + '">' + escapeHtml(authorText(name, photo)) + '</span>';
   }
