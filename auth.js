@@ -1,7 +1,7 @@
 /* Google sign-in starts a revocable 30-day device session; the ID token is not stored in browser storage. */
 (() => {
   'use strict';
-  let token='',expires=0,waiters=[],validator,initializing=false,accessTransport,pendingToken='',pollTimer,checking=false,accountOutsideHandler;
+  let token='',expires=0,waiters=[],validator,initializing=false,accessTransport,pendingToken='',pollTimer,checking=false,accountOutsideHandler,currentUser=null;
   function overlay() {
     let dialog=document.getElementById('reportLogin');if(dialog)return dialog;
     dialog=document.createElement('section');dialog.id='reportLogin';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','reportLoginTitle');
@@ -18,7 +18,7 @@
   function lock(){token='';expires=0;pendingToken='';clearTimeout(pollTimer);document.getElementById('reportAccountMenu')?.remove();if(accountOutsideHandler){document.removeEventListener('click',accountOutsideHandler);accountOutsideHandler=null;}document.getElementById('reportAccessAdminButton')?.remove();document.getElementById('reportAccessPanel')?.remove();const box=overlay();box.querySelector('#reportRequestAccess').hidden=true;box.hidden=false;box.style.display='grid';document.querySelector('.container')?.setAttribute('inert','');}
   function clearSavedSession(){try{localStorage.removeItem('nticReportSession');}catch(_){}}
   function finishSignIn(user,sessionToken,expiresAt){
-    token=sessionToken;expires=Number(expiresAt)||0;
+    currentUser=user;token=sessionToken;expires=Number(expiresAt)||0;
     try{localStorage.setItem('nticReportSession',sessionToken);}catch(_){}
     pendingToken='';clearTimeout(pollTimer);overlay().querySelector('#reportRequestAccess').hidden=true;
     const box=overlay();box.hidden=true;box.style.display='none';document.querySelector('.container')?.removeAttribute('inert');
@@ -53,42 +53,19 @@
     const host=document.querySelector('.header-card');if(!host)return;
     const wrap=document.createElement('div');wrap.id='reportAccountMenu';wrap.style.cssText='position:relative;flex:0 0 auto;z-index:10';
     const trigger=document.createElement('button');trigger.type='button';trigger.id='reportAccountMenuButton';trigger.className='report-account-trigger';trigger.setAttribute('aria-haspopup','true');trigger.setAttribute('aria-expanded','false');
-    trigger.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>';
-    const triggerLabel=document.createElement('span');triggerLabel.id='reportAccountMenuLabel';triggerLabel.textContent=typeof currentLang!=='undefined'&&currentLang==='en'?'Menu':'メニュー';
-    trigger.setAttribute('aria-label',typeof currentLang!=='undefined'&&currentLang==='en'?'Menu':'メニュー');
-    trigger.append(triggerLabel);
-    const languageButton=document.getElementById('langToggleBtn');
-    function syncMenuButtonStyle(){
-      if(!languageButton)return;
-      const languageStyle=getComputedStyle(languageButton);
-      const compact=window.matchMedia('(max-width:500px)').matches||trigger.classList.contains('is-icon-only');
-      trigger.style.cssText='display:inline-flex;align-items:center;justify-content:center;gap:7px;box-sizing:border-box;width:'+(compact?'38px':'104px')+';min-width:'+(compact?'38px':'104px')+';max-width:'+(compact?'38px':'104px')+';height:38px;min-height:38px;padding:'+(compact?'0':'0 10px')+';border:'+languageStyle.borderTopWidth+' '+languageStyle.borderTopStyle+' '+languageStyle.borderTopColor+';border-radius:'+languageStyle.borderRadius+';background:'+languageStyle.backgroundColor+';color:'+languageStyle.color+';font:'+languageStyle.font+';font-weight:'+languageStyle.fontWeight+';white-space:nowrap;cursor:pointer;transition:background-color .15s';
-      triggerLabel.style.display=compact?'none':'inline';
-    }
-    trigger.addEventListener('mouseenter',()=>{trigger.style.backgroundColor='#475569';});
-    trigger.addEventListener('mouseleave',syncMenuButtonStyle);
-    trigger.addEventListener('focus',()=>{trigger.style.outline='2px solid #60a5fa';trigger.style.outlineOffset='2px';});
-    trigger.addEventListener('blur',()=>{trigger.style.outline='';trigger.style.outlineOffset='';});
-    syncMenuButtonStyle();
-    window.addEventListener('resize',syncMenuButtonStyle);
-    new MutationObserver(syncMenuButtonStyle).observe(trigger,{attributes:true,attributeFilter:['class']});
+    trigger.textContent=String(user.initials||'').slice(0,4)||'•';trigger.setAttribute('aria-label',(user.displayName||'Account')+' menu');
+    trigger.style.cssText='display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:38px;height:38px;min-width:38px;padding:0;border:1px solid #64748b;border-radius:50%;background:#334155;color:#fff;font:700 13px/1 system-ui,sans-serif;letter-spacing:.2px;cursor:pointer;transition:background-color .15s,box-shadow .15s';
+    trigger.addEventListener('mouseenter',()=>{trigger.style.backgroundColor='#475569';});trigger.addEventListener('mouseleave',()=>{trigger.style.backgroundColor='#334155';});
+    trigger.addEventListener('focus',()=>{trigger.style.boxShadow='0 0 0 2px #94a3b8';});trigger.addEventListener('blur',()=>{trigger.style.boxShadow='none';});
     const menu=document.createElement('div');menu.hidden=true;menu.setAttribute('role','menu');menu.style.cssText='position:absolute;right:0;top:calc(100% + 8px);width:min(280px,calc(100vw - 32px));padding:10px;background:#fff;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 8px 28px #0002;color:#0f172a';
     function item(label,action){const button=document.createElement('button');button.type='button';button.setAttribute('role','menuitem');button.textContent=label;button.style.cssText='display:block;width:100%;min-height:44px;text-align:left;padding:9px 12px;border:0;border-radius:8px;background:#fff;color:#0f172a;font:inherit;cursor:pointer';button.onmouseenter=()=>button.style.background='#f1f5f9';button.onmouseleave=()=>button.style.background='#fff';button.onclick=()=>{close();action();};menu.append(button);return button;}
     const adminMenuItem=user.role==='admin'?item(typeof currentLang!=='undefined'&&currentLang==='en'?'Users':'利用者',openAccessPanel):null;
     const logoutMenuItem=item(typeof currentLang!=='undefined'&&currentLang==='en'?'Log out':'ログアウト',()=>window.ReportAuth.signOut());
-    function syncMenuLanguage(){
-      const english=typeof currentLang!=='undefined'&&currentLang==='en';
-      const menuLabel=english?'Menu':'メニュー';
-      triggerLabel.textContent=menuLabel;trigger.setAttribute('aria-label',menuLabel);
-      if(adminMenuItem)adminMenuItem.textContent=english?'Users':'利用者';
-      logoutMenuItem.textContent=english?'Log out':'ログアウト';
-    }
-    window.addEventListener('report-language-change',syncMenuLanguage);
-    syncMenuLanguage();
+    function syncMenuLanguage(){const english=typeof currentLang!=='undefined'&&currentLang==='en';trigger.setAttribute('aria-label',(user.displayName||'Account')+' menu');if(adminMenuItem)adminMenuItem.textContent=english?'Users':'利用者';logoutMenuItem.textContent=english?'Log out':'ログアウト';}
+    window.addEventListener('report-language-change',syncMenuLanguage);syncMenuLanguage();
     function close(){menu.hidden=true;trigger.setAttribute('aria-expanded','false');if(accountOutsideHandler){document.removeEventListener('click',accountOutsideHandler);accountOutsideHandler=null;}}
     trigger.onclick=()=>{const opening=menu.hidden;menu.hidden=!opening;trigger.setAttribute('aria-expanded',String(opening));if(opening){accountOutsideHandler=event=>{if(!wrap.contains(event.target))close();};setTimeout(()=>document.addEventListener('click',accountOutsideHandler),0);}};
-    wrap.append(trigger,menu);const actions=document.getElementById('headerActions')||host;if(languageButton&&languageButton.parentElement===actions)languageButton.after(wrap);else actions.append(wrap);
-    window.dispatchEvent(new Event('resize'));
+    wrap.append(trigger,menu);const actions=document.getElementById('headerActions')||host;const languageButton=document.getElementById('langToggleBtn');if(languageButton&&languageButton.parentElement===actions)languageButton.after(wrap);else actions.append(wrap);
     if(user.role==='admin'&&new URL(location.href).searchParams.get('access')==='1')openAccessPanel();
   }
   async function openAccessPanel(){
@@ -112,7 +89,16 @@
         const requests=data.requests.filter(x=>x.status==='pending');title('Menunggu persetujuan ('+requests.length+')');
         if(!requests.length)row('Tidak ada permintaan baru.');
         for(const request of requests){const box=row((request.name?request.name+' — ':'')+request.email);action(box,'Izinkan','decideReportAccess',[request.email,request.id,'approve'],'Izinkan '+request.email+' membaca dan menggunakan laporan sebagai member?');action(box,'Tolak','decideReportAccess',[request.email,request.id,'reject']);}
-        title('Sudah diizinkan');for(const user of data.users){const box=row(user.email+' · '+user.role);if(user.role==='member')action(box,'Cabut akses','revokeReportAccess',[user.email],'Cabut akses '+user.email+'?');}
+        title('Sudah diizinkan');for(const user of data.users){
+          const box=row(user.email+' · '+user.role),fields=document.createElement('div');fields.style.cssText='display:grid;grid-template-columns:minmax(150px,1fr) 90px auto;gap:8px;align-items:center;margin:8px 0';
+          const name=document.createElement('input');name.type='text';name.maxLength=60;name.value=user.displayName||'';name.placeholder='Nama tampilan';name.setAttribute('aria-label','Nama tampilan');
+          const initials=document.createElement('input');initials.type='text';initials.maxLength=4;initials.value=user.initials||'';initials.placeholder='Inisial';initials.setAttribute('aria-label','Inisial');
+          [name,initials].forEach(input=>input.style.cssText='box-sizing:border-box;min-width:0;width:100%;min-height:42px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit');
+          const save=document.createElement('button');save.type='button';save.textContent='Simpan nama';save.style.cssText='min-height:42px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer';
+          save.onclick=async()=>{save.disabled=true;try{await accessTransport('updateReportUserProfile',[user.email,name.value,initials.value],await window.ReportAuth.token());if(currentUser&&currentUser.email===user.email){currentUser={...currentUser,displayName:name.value.trim(),initials:initials.value.trim()};const avatar=document.getElementById('reportAccountMenuButton');if(avatar){avatar.textContent=currentUser.initials||'•';avatar.setAttribute('aria-label',(currentUser.displayName||'Account')+' menu');}}await refresh();}catch(error){status.textContent=error.message;save.disabled=false;}};
+          fields.append(name,initials,save);box.append(fields);
+          if(user.role==='member')action(box,'Cabut akses','revokeReportAccess',[user.email],'Cabut akses '+user.email+'?');
+        }
         status.textContent='Pengguna baru yang kamu izinkan mendapat akses member.';
       }catch(error){status.textContent=error.message;}finally{reload.disabled=false;}
     }
