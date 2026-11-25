@@ -7291,7 +7291,7 @@ function renderPackageRequestState(photoMessage, historyMessage) {
  const body=document.getElementById('packageManagerBody');if(!body)return;body.replaceChildren();
  [[editorLabel('📷 写真','📷 Photos'),photoMessage],[revisionT().records,historyMessage]].forEach(([label,message])=>{const field=document.createElement('div');field.className='editor-field';const title=document.createElement('label');title.textContent=label;const state=document.createElement('div');state.className='fu-history';state.textContent=message;field.append(title,state);body.append(field);});
 }
-async function openPackageManager(id){
+async const result=await packageLoadWithTimeout(enqueueMenuLoad('package:'+id,150,()=>menuRpc('getJournalPackage',id),()=>sequence===packageLoadSequence&&!!packageEntry&&packageEntry.id===id&&!document.getElementById('packageManagerOverlay').hidden),20000);(id){
  if(packageBusy||reportsSelecting||reportsLoading)return;const entry=reportContext(id);if(!entry)return;reportMenuFocus=reportActionsFocus||document.activeElement;closeReportMenus();
  packageEntry=Object.assign({},entry);packageLoaded=false;packageManage=true;packagePhotos=[];packageHistory=[];updatePackageLabels();updateReportsControls();
  
