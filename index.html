@@ -3557,8 +3557,7 @@ function changeLanguage(lang) {
 
   function authorText(name, photo) {
     if (!name) return '';
-    const prefix = photo ? (currentLang === 'en' ? 'Uploaded by ' : 'アップロード: ') : (currentLang === 'en' ? 'By ' : '記入: ');
-    return prefix + String(name);
+    return String(name);
   }
   function authorLabel(name, photo) {
     if (!name) return '';
@@ -4855,7 +4854,7 @@ function changeLanguage(lang) {
             <span class="attention-item-name filter-trigger-badge" title="${escapeHtml(item.urgensi)}で絞り込む" onclick="filterByUrgency('${escapeHtml(item.urgensi)}')">${escapeHtml(item.urgensi)}</span>
             <span class="attention-item-name filter-trigger-text" title="${escapeHtml(item.nama)}の全報告を絞り込む" onclick="filterByTrainee('${escapeHtml(item.nama)}')">${escapeHtml(item.nama)}</span>
           </div>
-          <span class="attention-item-date">${escapeHtml(item.tanggal)}${item.authorName ? ' · ' + escapeHtml(authorText(item.authorName, false)) : ''}</span>
+          <span class="attention-item-date"><span class="attention-date">${escapeHtml(item.tanggal)}</span>${item.authorName ? '<span class="attention-author">' + escapeHtml(authorText(item.authorName, false)) + '</span>' : ''}</span>
         </div>
         <div class="attention-item-note">${escapeHtml(item.catatan)}</div>
         
@@ -5562,9 +5561,9 @@ function changeLanguage(lang) {
     document.getElementById('photoViewerName').innerText = item.nama || '';
 
     const metaParts = [];
+    if (item.uploaderName || item.authorName) metaParts.push(authorText(item.uploaderName || item.authorName, true));
     if (item.tanggal) metaParts.push(item.tanggal);
     if (item.kategori) metaParts.push(item.kategori);
-    if (item.uploaderName || item.authorName) metaParts.push(authorText(item.uploaderName || item.authorName, true));
     document.getElementById('photoViewerMeta').innerText = metaParts.join(' · ');
 
     const noteEl = document.getElementById('photoViewerNote');
@@ -5915,7 +5914,7 @@ function changeLanguage(lang) {
       html += `<tr class="summary-row">
         <td class="summary-td-urgency" style="padding:10px; border-bottom:1px solid var(--border-color); vertical-align:top; white-space:nowrap;">
           <span class="badge ${badgeClass} filter-trigger-badge" title="${escapeHtml(item.urgensi)}で絞り込む" onclick="filterByUrgency('${escapeHtml(item.urgensi)}')">${escapeHtml(item.urgensi)}</span>
-          <span class="company-cell">${escapeHtml(item.tanggal)}${item.authorName ? ' · ' + escapeHtml(authorText(item.authorName, false)) : ''}</span>
+          <span class="company-cell report-date">${escapeHtml(item.tanggal)}</span>${item.authorName ? '<span class="report-author-desktop">' + escapeHtml(authorText(item.authorName, false)) + '</span>' : ''}
         </td>
         <td class="summary-td-name" style="padding:10px; border-bottom:1px solid var(--border-color); vertical-align:top;">
           <div style="display:inline-flex; align-items:center; gap:3px;">
@@ -5930,7 +5929,7 @@ function changeLanguage(lang) {
           ${escapeHtml(item.catatan)}
           
           ${followupText}
-          ${reportMenuMarkup(item)}
+          <div class="summary-report-actions">${item.authorName ? '<span class="report-author-mobile">' + escapeHtml(authorText(item.authorName, false)) + '</span>' : ''}${reportMenuMarkup(item)}</div>
         </td>
       </tr>`;
     });
@@ -5979,7 +5978,7 @@ function changeLanguage(lang) {
           <span class="report-note-text">${escapeHtml(item.catatan)}</span>
           
           ${followupText}
-          <div class="reports-row-actions">${reportMenuMarkup(item)}</div>
+          <div class="reports-row-actions">${item.authorName ? '<span class="report-author-mobile">' + escapeHtml(authorText(item.authorName, false)) + '</span>' : ''}${reportMenuMarkup(item)}</div>
         </td>
       </tr>`;
     });
@@ -6167,10 +6166,11 @@ function renderRecentFollowUps() {
     return;
   }
   container.innerHTML = recentFollowUpEntries.map(item => {
-    const date = (item.followLegacy ? revisionT().legacy : revisionT().followDate + ': ' + item.followDate) + (item.authorName ? ' · ' + authorText(item.authorName, false) : '');
+    const date = item.followLegacy ? revisionT().legacy : revisionT().followDate + ': ' + item.followDate;
+    const author = item.authorName ? '<span class="activity-item-author">' + escapeHtml(authorText(item.authorName, false)) + '</span>' : '';
     const status = item.followStatus === '完了' ? revisionT().done : item.followStatus === '未対応' ? revisionT().pending : '';
     return '<div class="activity-item"><div class="activity-item-top"><strong>' + escapeHtml(item.nama) +
-      '</strong><span class="activity-item-date">' + escapeHtml(date) + '</span></div>' +
+      '</strong><span class="activity-item-date">' + escapeHtml(date) + author + '</span></div>' +
       '<div class="company-cell">' + escapeHtml(item.perusahaan || '') + '</div>' +
       '<div class="activity-report-note">' + escapeHtml(item.catatan || '') + '</div>' +
       '<div class="activity-item-note-clean">' + escapeHtml(item.followNote) + '</div>' +
@@ -7131,7 +7131,7 @@ function renderPackagePhotos(){
  const by=document.createElement('div');by.innerHTML=authorLabel(photo.uploaderName || packageEntry.authorName, true);card.append(img,by);const button=document.createElement('button');button.type='button';button.className='revision-small-button package-danger';button.textContent=packageT().removePhoto;
  button.onclick=()=>{if(packageCanEdit())showPackageConfirm({method:'trashJournalItem',args:['photo',packageEntry.id,photo.id],title:packageT().removePhoto,description:packageReportLabel(packageEntry),permanent:false});};card.append(button);box.appendChild(card);});
 }
-function packageReportLabel(entry){return (entry.nama||entry.name||'')+' · '+(entry.tanggal||entry.date||'')+'\n'+String(entry.catatan||entry.note||'').slice(0,220);}
+function packageReportLabel(entry){const excerpt=String(entry.catatan||entry.note||'').replace(/\s+/g,' ').trim();const details=[entry.nama||entry.name||'',entry.perusahaan||entry.company||'',[entry.tanggal||entry.date||'',entry.kategori||entry.category||''].filter(Boolean).join(' · '),excerpt.length>180?excerpt.slice(0,177)+'…':excerpt].filter(Boolean);return details.join('\n');}
 function confirmReportTrash(){if(!packageCanEdit())return;showPackageConfirm({method:'trashJournalItem',args:['report',packageEntry.id,''],title:packageT().removeReport,description:packageReportLabel(packageEntry),permanent:false});}
 function confirmFollowTrash(item){if(!packageCanEdit())return;showPackageConfirm({method:'trashJournalItem',args:['follow',packageEntry.id,item.id],title:packageT().removeFollow,description:packageReportLabel(packageEntry)+'\n\n'+item.note,permanent:false});}
 function showPackageConfirm(action){
@@ -7283,7 +7283,7 @@ function toggleReportSelected(id,checked){if(packageBusy||reportsLoading||!repor
 function selectAllReportsOnPage(checked){if(packageBusy||reportsLoading)return;reportsBulkOperationId='';reportsSelected.clear();if(checked)reportsPageEntries.forEach(e=>reportsSelected.add(e.id));syncReportSelection();}
 function closeReportMenus(){closeReportActions(false);}
 function reportSelectMarkup(item){return '<label class="reports-row-select"><input type="checkbox" data-report-id="'+escapeHtml(item.id)+'" aria-label="'+escapeHtml(reportsT().selectItem+': '+item.nama)+'" onchange="toggleReportSelected(this.dataset.reportId,this.checked)"></label>';}
-function reportMenuMarkup(item){return '<button type="button" class="revision-small-button reports-row-menu" aria-label="'+escapeHtml(reportsT().menu+': '+item.nama)+'" onclick="openReportActions(\''+escapeHtml(item.id)+'\')">⋯</button>';}
+function reportMenuMarkup(item){return '<button type="button" class="revision-small-button reports-row-menu" data-report-id="'+escapeHtml(item.id)+'" aria-label="'+escapeHtml(reportsT().menu+': '+item.nama)+'" onclick="openReportActions(\''+escapeHtml(item.id)+'\')">⋯</button>';}
 function openReportActions(id){if(packageBusy||reportsSelecting||reportsLoading)return;reportActionsFocus=document.activeElement;openPackageManager(id);}
 function closeReportActions(restoreFocus=true){if(packageBusy)return;document.getElementById('packageRowActionsOverlay').hidden=true;reportActionsEntry=null;syncReportsScrollLock();if(restoreFocus&&reportActionsFocus&&reportActionsFocus.isConnected)reportActionsFocus.focus({preventScroll:true});}
 function reportContext(id){return reportsPageEntries.find(e=>e.id===id)||summaryMenuEntries.find(e=>e.id===id)||null;}
@@ -7311,7 +7311,7 @@ window.openPackageManagerFromRoute=openPackageManagerFromRoute;
 async function reloadPackageManager(){
  if(!packageEntry)return;const id=String(packageEntry.id||''),overlay=document.getElementById('packageManagerOverlay');if(!id||!overlay||overlay.hidden)return;
  const token={};overlay.__packageLoadToken=token;const isCurrent=()=>overlay.__packageLoadToken===token&&document.contains(overlay)&&!overlay.hidden&&packageEntry&&packageEntry.id===id;
- let timeoutId=0;packageLoaded=false;packagePhotos=[];packageHistory=[];reportEditorState=null;updateReportsControls();renderPackageRequestState(managerText('写真を読み込み中…','Loading photos…'),revisionT().historyLoading);
+ let timeoutId=0;packageLoaded=false;packagePhotos=[];packageHistory=[];reportEditorState=null;updateReportsControls();const body=document.getElementById('packageManagerBody');if(body)body.replaceChildren();
  try{
   const result=await Promise.race([menuRpc('getJournalPackage',id),new Promise((_,reject)=>{timeoutId=window.setTimeout(()=>reject(Error('package-load-timeout')),30000);})]);
   if(!isCurrent())return;if(!result||!result.success)throw Error(result&&result.message||packageT().failed);
@@ -7523,11 +7523,27 @@ async function managerMutation(method,args){
  catch(err){document.getElementById('packageManagerError').textContent=err.message||packageT().failed;}finally{packageBusy=false;buttons.forEach(b=>b.disabled=false);updateReportsControls();}
 }
 
+function closeReportContextMenu(){const menu=document.getElementById('reportContextMenu');if(menu)menu.remove();}
+function openReportContextMenu(button,event){
+ event.preventDefault();closeReportContextMenu();const id=button.dataset.reportId;if(!id)return;
+ const menu=document.createElement('div');menu.id='reportContextMenu';menu.className='report-context-menu';menu.setAttribute('role','menu');
+ const edit=document.createElement('button');edit.type='button';edit.setAttribute('role','menuitem');edit.textContent=currentLang==='en'?'Edit report':'報告を編集';edit.onclick=()=>{closeReportContextMenu();openReportActions(id);};
+ const del=document.createElement('button');del.type='button';del.setAttribute('role','menuitem');del.textContent=currentLang==='en'?'Delete report':'報告を削除';del.onclick=()=>{closeReportContextMenu();confirmReportFromRow(id);};
+ menu.append(edit,del);document.body.appendChild(menu);
+ const pad=8,rect=menu.getBoundingClientRect(),left=Math.min(event.clientX,window.innerWidth-rect.width-pad),top=Math.min(event.clientY,window.innerHeight-rect.height-pad);
+ menu.style.left=Math.max(pad,left)+'px';menu.style.top=Math.max(pad,top)+'px';edit.focus();
+}
+document.addEventListener('contextmenu',event=>{const button=event.target.closest&&event.target.closest('.reports-row-menu[data-report-id]');if(button)openReportContextMenu(button,event);});
+document.addEventListener('click',event=>{const menu=document.getElementById('reportContextMenu');if(menu&&!menu.contains(event.target))closeReportContextMenu();});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeReportContextMenu();});
 </script>
 
   <script src="editor-photo-upload.js?v=2"></script>
   <script src="share-links.js?v=12"></script>
-<style>#reportsSummaryPanel .summary-td-detail>.content-author,#recentTableBody .report-cell-note>.content-author{display:none!important}#reportsSummaryPanel .summary-td-urgency>.content-author,#recentTableBody .report-cell-urgency>.content-author{display:block;margin-top:1px;font-size:10px;line-height:1.15;color:#64748b;overflow-wrap:anywhere}</style></body>
+<style>
+.report-author-desktop{display:block;margin-top:1px;font-size:10px;line-height:1.2;color:#64748b;overflow-wrap:anywhere}.report-author-mobile{display:none}.summary-report-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:6px}.report-context-menu{position:fixed;z-index:12050;min-width:160px;padding:6px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 8px 28px #0f172a30;display:grid;gap:4px}.report-context-menu button{font:inherit;text-align:left;padding:10px 12px;min-height:42px;border:0;border-radius:5px;background:#fff;color:#0f172a;cursor:pointer}.report-context-menu button:hover,.report-context-menu button:focus-visible{background:#eff6ff}.activity-item-author{display:block;margin-top:2px;color:#64748b;font-size:10px;line-height:1.2}.attention-item-date .attention-author{display:block;color:#64748b;font-size:10px;line-height:1.2;margin-top:1px}
+@media(max-width:900px){.report-author-desktop{display:none}.report-author-mobile{display:inline-block;color:#64748b;font-size:10px;line-height:1.2;overflow-wrap:anywhere}.reports-row-actions,.summary-report-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;margin-top:6px}.reports-row-actions .reports-row-menu,.summary-report-actions .reports-row-menu{flex:0 0 auto;margin-left:auto}}
+</style></body>
 </html>
 
 
