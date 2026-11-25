@@ -4855,10 +4855,10 @@ function changeLanguage(lang) {
             <span class="attention-item-name filter-trigger-badge" title="${escapeHtml(item.urgensi)}で絞り込む" onclick="filterByUrgency('${escapeHtml(item.urgensi)}')">${escapeHtml(item.urgensi)}</span>
             <span class="attention-item-name filter-trigger-text" title="${escapeHtml(item.nama)}の全報告を絞り込む" onclick="filterByTrainee('${escapeHtml(item.nama)}')">${escapeHtml(item.nama)}</span>
           </div>
-          <span class="attention-item-date">${escapeHtml(item.tanggal)}</span>
+          <span class="attention-item-date">${escapeHtml(item.tanggal)}${item.authorName ? ' · ' + escapeHtml(authorText(item.authorName, false)) : ''}</span>
         </div>
         <div class="attention-item-note">${escapeHtml(item.catatan)}</div>
-        ${authorLabel(item.authorName, false)}
+        
         ${existingFollowUpHtml}
         <div class="attention-actions-row">
           <button type="button" class="btn-resolve-fast" data-id="${escapeHtml(item.id)}">
@@ -5199,10 +5199,10 @@ function changeLanguage(lang) {
               ${photoBadge}
               <span class="activity-item-category filter-trigger-badge" title="カテゴリ [${escapeHtml(item.kategori)}] で絞り込む" onclick="filterByCategory('${escapeHtml(item.kategori)}')">🏷️ ${escapeHtml(item.kategori)}</span>
             </div>
-            <span class="activity-item-date">${escapeHtml(item.tanggal)}</span>
+            <span class="activity-item-date">${escapeHtml(item.tanggal)}${item.authorName ? ' · ' + escapeHtml(authorText(item.authorName, false)) : ''}</span>
           </div>
           <div class="activity-item-note-clean">${safeNote}</div>
-          ${authorLabel(item.authorName, false)}
+          
           ${followupHtml}
           <div class="activity-bottom-bar">
             <button type="button" class="btn-reopen-attention" onclick="reopenAttentionEntry('${escapeHtml(item.id)}', this)">
@@ -5915,7 +5915,7 @@ function changeLanguage(lang) {
       html += `<tr class="summary-row">
         <td class="summary-td-urgency" style="padding:10px; border-bottom:1px solid var(--border-color); vertical-align:top; white-space:nowrap;">
           <span class="badge ${badgeClass} filter-trigger-badge" title="${escapeHtml(item.urgensi)}で絞り込む" onclick="filterByUrgency('${escapeHtml(item.urgensi)}')">${escapeHtml(item.urgensi)}</span>
-          <span class="company-cell">${escapeHtml(item.tanggal)}</span>${authorLabel(item.authorName, false)}
+          <span class="company-cell">${escapeHtml(item.tanggal)}${item.authorName ? ' · ' + escapeHtml(authorText(item.authorName, false)) : ''}</span>
         </td>
         <td class="summary-td-name" style="padding:10px; border-bottom:1px solid var(--border-color); vertical-align:top;">
           <div style="display:inline-flex; align-items:center; gap:3px;">
@@ -5928,7 +5928,7 @@ function changeLanguage(lang) {
         </td>
         <td class="summary-td-detail" style="padding:10px; border-bottom:1px solid var(--border-color); vertical-align:top; line-height:1.45;">
           ${escapeHtml(item.catatan)}
-          ${authorLabel(item.authorName, false)}
+          
           ${followupText}
           ${reportMenuMarkup(item)}
         </td>
@@ -5964,7 +5964,7 @@ function changeLanguage(lang) {
       html += `<tr>
         <td class="report-cell-urgency">${reportSelectMarkup(item)}
           <span class="badge ${badgeClass} filter-trigger-badge" title="${escapeHtml(item.urgensi)}で絞り込む" onclick="filterByUrgency('${escapeHtml(item.urgensi)}')">${escapeHtml(item.urgensi)}</span>
-          <span class="company-cell">${escapeHtml(item.tanggal)}</span>${authorLabel(item.authorName, false)}
+          <span class="company-cell">${escapeHtml(item.tanggal)}${item.authorName ? ' · ' + escapeHtml(authorText(item.authorName, false)) : ''}</span>
         </td>
         <td class="report-cell-person">
           <div style="display:inline-flex; align-items:center;">
@@ -5977,7 +5977,7 @@ function changeLanguage(lang) {
         </td>
         <td class="report-cell-note">
           <span class="report-note-text">${escapeHtml(item.catatan)}</span>
-          ${authorLabel(item.authorName, false)}
+          
           ${followupText}
           <div class="reports-row-actions">${reportMenuMarkup(item)}</div>
         </td>
@@ -6167,14 +6167,14 @@ function renderRecentFollowUps() {
     return;
   }
   container.innerHTML = recentFollowUpEntries.map(item => {
-    const date = item.followLegacy ? revisionT().legacy : revisionT().followDate + ': ' + item.followDate;
+    const date = (item.followLegacy ? revisionT().legacy : revisionT().followDate + ': ' + item.followDate) + (item.authorName ? ' · ' + authorText(item.authorName, false) : '');
     const status = item.followStatus === '完了' ? revisionT().done : item.followStatus === '未対応' ? revisionT().pending : '';
     return '<div class="activity-item"><div class="activity-item-top"><strong>' + escapeHtml(item.nama) +
       '</strong><span class="activity-item-date">' + escapeHtml(date) + '</span></div>' +
       '<div class="company-cell">' + escapeHtml(item.perusahaan || '') + '</div>' +
       '<div class="activity-report-note">' + escapeHtml(item.catatan || '') + '</div>' +
       '<div class="activity-item-note-clean">' + escapeHtml(item.followNote) + '</div>' +
-      authorLabel(item.authorName, false) +
+
       '<div class="recent-follow-up-footer"><span>' + escapeHtml(status) + '</span>' +
       '<button type="button" class="report-history-link" title="' + escapeHtml(revisionT().records) + '" aria-label="' + escapeHtml(revisionT().records) +
       '" onclick="openFollowUpModalById(\'' + escapeHtml(item.id) + '\')">↪</button></div></div>';
@@ -7154,7 +7154,7 @@ async function runPackageAction(){
   const result=action.method==='clientPurgeAllTrash'?await runPackageTrashBulk('purge',action.ids):action.method==='trashJournalReports'?await runReportsBulk(action):await menuRpc(action.method,...action.args);
   if(!result||!result.success){if(result&&result.retryable&&!document.getElementById('packageTrashOverlay').hidden)await loadPackageTrash();throw Error(result&&result.message||packageT().failed);}
   packageBusy=false;closePackageConfirm();invalidateMenuData();
-  if(packageEntry){if(action.method==='trashJournalItem'&&action.args[0]==='report')closePackageManager();else await reloadPackageManager();setupReportEditor();}
+  if(packageEntry){if(action.method==='trashJournalItem'&&action.args[0]==='report')closePackageManager();else await reloadPackageManager();}
   loadDashboard();loadJurnalPage(action.method==='trashJournalReports');loadRecentFollowUps();if(!document.getElementById('packageTrashOverlay').hidden)await loadPackageTrash();
   if(result.bulkMessage)document.getElementById('packageTrashProgress').textContent=result.bulkMessage;
   if(result.bulkError)document.getElementById('packageTrashError').textContent=result.bulkError;
@@ -7294,14 +7294,14 @@ function renderPackageRequestState(photoMessage, historyMessage) {
 async function openPackageManager(id){
  if(packageBusy||reportsSelecting||reportsLoading)return;const entry=reportContext(id);if(!entry)return;reportMenuFocus=reportActionsFocus||document.activeElement;closeReportMenus();
  packageEntry=Object.assign({},entry);packageLoaded=false;packageManage=true;packagePhotos=[];packageHistory=[];updatePackageLabels();updateReportsControls();
- document.getElementById('packageManagerDescription').textContent=packageReportLabel(packageEntry);document.getElementById('packageManagerError').textContent='';document.getElementById('packagePhotos').textContent=packageT().loading;document.getElementById('packageManagedHistory').textContent=revisionT().historyLoading;
- prepareInlineManager();document.getElementById('packageManagerOverlay').hidden=false;syncReportsScrollLock();document.getElementById('packageManagerClose').focus();await reloadPackageManager();setupReportEditor();
+ 
+ prepareInlineManager();document.getElementById('packageManagerOverlay').hidden=false;syncReportsScrollLock();document.getElementById('packageManagerClose').focus();await reloadPackageManager();
 }
 async function reloadPackageManager(){
- if(!packageEntry)return;const id=packageEntry.id,sequence=++packageLoadSequence;packageLoaded=false;updateReportsControls();renderPackageRequestState(managerText('写真を読み込み中…','Loading photos…'),revisionT().historyLoading);document.getElementById('packagePhotos').textContent=packageT().loading;document.getElementById('packageManagedHistory').textContent=revisionT().historyLoading;
+ if(!packageEntry)return;const id=packageEntry.id,sequence=++packageLoadSequence;packageLoaded=false;updateReportsControls();renderPackageRequestState(managerText('写真を読み込み中…','Loading photos…'),revisionT().historyLoading);
  try{const result=await menuRpc('getJournalPackage',id);if(sequence!==packageLoadSequence||!packageEntry||packageEntry.id!==id)return;if(!result||!result.success)throw Error(result&&result.message||packageT().failed);
-  if(result.report)packageEntry=result.report;packagePhotos=result.photos||[];packageHistory=result.history||[];packageLoaded=true;renderPackagePhotos();renderManagedHistory();updateReportsControls();
- }catch(err){if(sequence!==packageLoadSequence)return;document.getElementById('packageManagerError').textContent=err.message||packageT().failed;document.getElementById('packagePhotos').textContent=packageT().failed;document.getElementById('packageManagedHistory').textContent=revisionT().historyError;renderPackageRequestState(packageT().failed,revisionT().historyError);const error=document.createElement('div');error.className='package-error';error.textContent=err.message||packageT().failed;document.getElementById('packageManagerBody').append(error);}
+  if(result.report)packageEntry=result.report;packagePhotos=result.photos||[];packageHistory=result.history||[];packageLoaded=true;setupReportEditor();renderPackagePhotos();renderManagedHistory();updateReportsControls();
+ }catch(err){if(sequence!==packageLoadSequence)return;renderPackageRequestState(packageT().failed,revisionT().historyError);const error=document.createElement('div');error.className='package-error';error.textContent=err.message||packageT().failed;document.getElementById('packageManagerBody').append(error);}
 }
 function closePackageManager(){if(packageBusy)return;packageLoadSequence++;document.getElementById('packageManagerOverlay').hidden=true;document.getElementById('reportsModalOverlay').classList.remove('report-detail-open');managerPendingFollow=null;packageEntry=null;packageLoaded=false;packageManage=false;syncReportsScrollLock();if(reportMenuFocus&&reportMenuFocus.isConnected)reportMenuFocus.focus({preventScroll:true});}
 function renderManagedHistory(){
@@ -7364,7 +7364,7 @@ document.getElementById('fuNoteInput').addEventListener('input',updateFollowSave
 document.getElementById('fuTargetStatus').addEventListener('change',updateFollowSaveButton);
 function reportActionsHtml(item){
  const history=item.followHistory&&item.followHistory.length?item.followHistory:(item.catatanFollowUp?[{note:item.catatanFollowUp}]:[]);
- return history.map(action=>'<div class="report-action-line">↳ <b>'+escapeHtml(i18n[currentLang].followSummary)+'</b> '+escapeHtml(action.note)+authorLabel(action.authorName,false)+'</div>').join('');
+ return history.map(action=>'<div class="report-action-line">↳ <b>'+escapeHtml(i18n[currentLang].followSummary)+'</b> '+escapeHtml(action.note)+(action.eventDate?'<div class="fu-history-meta">'+escapeHtml(action.eventDate)+(action.authorName?' · '+escapeHtml(authorText(action.authorName,false)):'')+'</div>':'')+'</div>').join('');
 }
 function appendCardHistory(card,item){
  card.querySelectorAll('.attention-item-followup,.activity-item-note-clean,.card-history-fold').forEach(e=>e.remove());
@@ -7372,7 +7372,7 @@ function appendCardHistory(card,item){
  if(!history.length)return;
  const key=card.className+':'+item.id,stack=document.createElement('div');stack.className='follow-action-stack';
  const body=document.createElement('div'),older=document.createElement('div');older.hidden=!cardHistoryOpen.has(key);
- function renderAction(action){const row=document.createElement('div');row.className='follow-action-entry';const note=document.createElement('div');note.innerHTML='↳ <b>'+escapeHtml(i18n[currentLang].followSummary)+'</b> '+escapeHtml(action.note);row.append(note);if(action.authorName){const by=document.createElement('div');by.innerHTML=authorLabel(action.authorName,false);row.append(by);}if(action.eventDate){const date=document.createElement('div');date.className='fu-history-meta';date.textContent=action.eventDate;row.append(date);}return row;}
+ function renderAction(action){const row=document.createElement('div');row.className='follow-action-entry';const note=document.createElement('div');note.innerHTML='↳ <b>'+escapeHtml(i18n[currentLang].followSummary)+'</b> '+escapeHtml(action.note);row.append(note);if(action.eventDate){const date=document.createElement('div');date.className='fu-history-meta';date.textContent=action.eventDate+(action.authorName?' · '+authorText(action.authorName,false):'');row.append(date);}return row;}
  history.slice(0,-1).forEach(action=>older.append(renderAction(action)));body.append(older,renderAction(history[history.length-1]));
  if(history.length>1){const arrow=document.createElement('button');arrow.type='button';arrow.className='follow-fold-arrow';const update=()=>{arrow.setAttribute('aria-expanded',String(!older.hidden));arrow.setAttribute('aria-label',currentLang==='ja'?older.hidden?'以前の対応を表示':'以前の対応を閉じる':older.hidden?'Show previous follow-ups':'Hide previous follow-ups');};update();arrow.onclick=()=>{older.hidden=!older.hidden;if(older.hidden)cardHistoryOpen.delete(key);else cardHistoryOpen.add(key);update();};stack.append(arrow);}else stack.classList.add('single-action');
  stack.append(body);const footer=card.querySelector('.attention-actions-row,.recent-follow-up-footer');if(footer)card.insertBefore(stack,footer);else card.append(stack);
@@ -7499,7 +7499,7 @@ async function saveReportEditor(){
 }
 async function managerMutation(method,args){
  if(packageBusy)return;packageBusy=true;const buttons=[...document.querySelectorAll('#packageManagerOverlay button,#packageManagerOverlay input,#packageManagerOverlay textarea,#packageManagerOverlay select')];buttons.forEach(b=>b.disabled=true);
- try{const result=await menuRpc(method,...args);if(!result||!result.success)throw Error(result&&result.message||packageT().failed);if(method==='updateReportDetail'){packageEntry.catatan=args[1];document.getElementById('packageManagerDescription').textContent=packageReportLabel(packageEntry);}if(method==='setEntryStatus'){packageEntry.status=args[1];managerPendingFollow=null;}packageBusy=false;await reloadPackageManager();setupReportEditor();loadDashboard();loadJurnalPage(true);}
+ try{const result=await menuRpc(method,...args);if(!result||!result.success)throw Error(result&&result.message||packageT().failed);if(method==='updateReportDetail'){packageEntry.catatan=args[1];document.getElementById('packageManagerDescription').textContent=packageReportLabel(packageEntry);}if(method==='setEntryStatus'){packageEntry.status=args[1];managerPendingFollow=null;}packageBusy=false;await reloadPackageManager();loadDashboard();loadJurnalPage(true);}
  catch(err){document.getElementById('packageManagerError').textContent=err.message||packageT().failed;}finally{packageBusy=false;buttons.forEach(b=>b.disabled=false);updateReportsControls();}
 }
 
