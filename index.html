@@ -2373,7 +2373,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
     <div class="card" id="attentionPanel" style="flex: 1; display: flex; flex-direction: column; min-height: 280px; max-height: 420px;">
       <div class="side-panel-title" id="lblAttentionTitle">🔔 要対応一覧</div>
       <div class="attention-list" id="attentionList" style="flex: 1; overflow-y: auto;">
-        <div class="attention-empty" id="attentionEmptyMsg">対応が必要な報告はありません。</div>
+        <div class="attention-empty" id="attentionEmptyMsg">読み込み中… / Loading…</div>
       </div>
     </div>
 
@@ -2381,7 +2381,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
     <div class="card" id="activityPanel" style="flex: 1; display: flex; flex-direction: column; min-height: 280px; max-height: 420px;">
       <div class="side-panel-title" id="lblActivityTitle">📝 最近の対応</div>
       <div class="activity-list" id="activityList" style="flex: 1; overflow-y: auto;">
-        <div class="activity-empty" id="activityEmptyMsg">対応記録はまだありません。</div>
+        <div class="activity-empty" id="activityEmptyMsg">読み込み中… / Loading…</div>
       </div>
     </div>
   </div>
@@ -2571,7 +2571,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
         </button>
       </div>
       <div class="photo-gallery-grid" id="photoGallery">
-        <div class="photo-empty" id="photoEmptyMsg" style="grid-column: 1 / -1;">写真はまだありません。</div>
+        <div class="photo-empty" id="photoEmptyMsg" style="grid-column: 1 / -1;">読み込み中… / Loading…</div>
       </div>
     </div>
 
@@ -4744,7 +4744,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
     lastDashboardData = data || { attentionList: [], latestActivity: [], latestPhotos: [] };
     loadRecentFollowUps();
     renderAttentionList(lastDashboardData.attentionList);
-    renderRecentFollowUps();
+    
     renderPhotoGallery(lastDashboardData.latestPhotos);
   }
 
@@ -4793,7 +4793,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
         applyDashboardData(data);
       })
       .withFailureHandler(function(err) {
-        console.error('getDashboardData failed:', err);
+        console.error('getDashboardData failed:', err);const failed=escapeHtml(i18n[currentLang].loadError||i18n[currentLang].errServer);document.getElementById('attentionList').innerHTML='<div class="attention-empty">'+failed+'</div>';document.getElementById('photoGallery').innerHTML='<div class="photo-empty" style="grid-column:1 / -1;">'+failed+'</div>';
       })
       .getDashboardData();
   }
