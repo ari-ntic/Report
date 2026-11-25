@@ -6145,7 +6145,7 @@ let recentFollowUpSequence = 0;
 function loadRecentFollowUps() {
   mainLoadState.followups=false;
   const sequence = ++recentFollowUpSequence;
-  showRecentFollowUpMessage(revisionT().historyLoading);
+  // Keep the initial generic loading message until recent follow-ups finish loading.
   google.script.run.withSuccessHandler(result => {
     if (sequence !== recentFollowUpSequence) return;
     recentFollowUpsLoaded=true;recentFollowUpEntries = (result && result.entries || []).filter((item,index,entries)=>entries.findIndex(other=>other.id===item.id)===index);
