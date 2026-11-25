@@ -3559,7 +3559,7 @@ function changeLanguage(lang) {
     if (!name) return '';
     return String(name);
   }
-  function authorLabel(name, photo) {
+  function nationalityFlagHtml(item){ const raw=item&&(item.nationality||item.kewarganegaraan||item['国籍']||item.negara);if(!raw)return ''; const s=String(raw).normalize('NFKC').toLowerCase(),rules=[[/indonesia|インドネシア/,'🇮🇩'],[/philipp|pilipin|フィリピン/,'🇵🇭'],[/thailand|thai|タイ/,'🇹🇭'],[/vietnam|ベトナム|越南/,'🇻🇳'],[/myanmar|ミャンマー|ビルマ/,'🇲🇲'],[/cambodia|カンボジア|クメール/,'🇰🇭'],[/nepal|ネパール/,'🇳🇵'],[/laos|ラオス/,'🇱🇦'],[/china|中国/,'🇨🇳'],[/mongolia|モンゴル/,'🇲🇳'],[/bangladesh|バングラデシュ/,'🇧🇩'],[/sri lanka|スリランカ/,'🇱🇰']]; const hit=rules.find(x=>x[0].test(s));return hit?'<span class="nationality-flag" title="'+escapeHtml(raw)+'">'+hit[1]+'</span>':'';}function authorLabel(name, photo) {
     if (!name) return '';
     return '<span class="content-author' + (photo ? ' photo-author' : '') + '">' + escapeHtml(authorText(name, photo)) + '</span>';
   }
@@ -4852,7 +4852,7 @@ function changeLanguage(lang) {
         <div class="attention-item-top">
           <div style="display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap;">
             <span class="attention-item-name filter-trigger-badge" title="${escapeHtml(item.urgensi)}で絞り込む" onclick="filterByUrgency('${escapeHtml(item.urgensi)}')">${escapeHtml(item.urgensi)}</span>
-            <span class="attention-item-name filter-trigger-text" title="${escapeHtml(item.nama)}の全報告を絞り込む" onclick="filterByTrainee('${escapeHtml(item.nama)}')">${escapeHtml(item.nama)}</span>
+            <span class="attention-item-name filter-trigger-text" title="${escapeHtml(item.nama)}の全報告を絞り込む" onclick="filterByTrainee('${escapeHtml(item.nama)}')">${escapeHtml(item.nama)}${nationalityFlagHtml(item)}</span>
           </div>
           <span class="attention-item-date"><span class="attention-date">${escapeHtml(item.tanggal)}</span>${item.authorName ? '<span class="attention-author">' + escapeHtml(authorText(item.authorName, false)) + '</span>' : ''}</span>
         </div>
@@ -5558,11 +5558,11 @@ function changeLanguage(lang) {
       nextBtn.classList.toggle('is-hidden', viewerIndex >= total - 1);
     }
 
-    document.getElementById('photoViewerName').innerText = item.nama || '';
+    document.getElementById('photoViewerName').innerHTML = escapeHtml(item.nama || '') + nationalityFlagHtml(item);
 
     const metaParts = [];
-    if (item.uploaderName || item.authorName) metaParts.push(authorText(item.uploaderName || item.authorName, true));
     if (item.tanggal) metaParts.push(item.tanggal);
+    if (item.uploaderName || item.authorName) metaParts.push(authorText(item.uploaderName || item.authorName, true));
     if (item.kategori) metaParts.push(item.kategori);
     document.getElementById('photoViewerMeta').innerText = metaParts.join(' · ');
 
@@ -5772,7 +5772,7 @@ function changeLanguage(lang) {
     const list = (lastDashboardData && lastDashboardData.latestPhotos) || [];
     if (!list[idx]) return;
     const photos = list.map(function(item) {
-      return { url: item.fotoUrl, nama: item.nama, tanggal: item.tanggal, kategori: item.kategori, catatan: item.catatan };
+      return { url: item.fotoUrl, nama: item.nama, nationality: item.nationality, tanggal: item.tanggal, kategori: item.kategori, catatan: item.catatan };
     });
     openPhotoViewer(photos, idx);
   }
@@ -5859,7 +5859,7 @@ function changeLanguage(lang) {
   function openViewerFromGalleryModal(idx) {
     if (!currentGalleryPhotos[idx]) return;
     const photos = currentGalleryPhotos.map(function(item) {
-      return { url: item.fotoUrl, nama: item.nama, tanggal: item.tanggal, kategori: item.kategori, catatan: item.catatan };
+      return { url: item.fotoUrl, nama: item.nama, nationality: item.nationality, tanggal: item.tanggal, kategori: item.kategori, catatan: item.catatan };
     });
     openPhotoViewer(photos, idx);
   }
@@ -5918,7 +5918,7 @@ function changeLanguage(lang) {
         </td>
         <td class="summary-td-name" style="padding:10px; border-bottom:1px solid var(--border-color); vertical-align:top;">
           <div style="display:inline-flex; align-items:center; gap:3px;">
-            <b class="filter-trigger-text" title="${escapeHtml(item.nama)}の全報告を絞り込む" onclick="filterByTrainee('${escapeHtml(item.nama)}')">${escapeHtml(item.nama)}</b>${photoIcon}
+            <b class="filter-trigger-text" title="${escapeHtml(item.nama)}の全報告を絞り込む" onclick="filterByTrainee('${escapeHtml(item.nama)}')">${escapeHtml(item.nama)}${nationalityFlagHtml(item)}</b>${photoIcon}
           </div>
           <span class="company-cell filter-trigger-text" title="${escapeHtml(item.perusahaan)}の全報告を絞り込む" onclick="filterByCompany('${escapeHtml(item.perusahaan)}')">🏢 ${escapeHtml(item.perusahaan)}</span>
         </td>
@@ -5967,7 +5967,7 @@ function changeLanguage(lang) {
         </td>
         <td class="report-cell-person">
           <div style="display:inline-flex; align-items:center;">
-            <b class="filter-trigger-text" title="${escapeHtml(item.nama)}で絞り込む" onclick="filterByTrainee('${escapeHtml(item.nama)}')">${escapeHtml(item.nama)}</b>${photoIcon}
+            <b class="filter-trigger-text" title="${escapeHtml(item.nama)}で絞り込む" onclick="filterByTrainee('${escapeHtml(item.nama)}')">${escapeHtml(item.nama)}${nationalityFlagHtml(item)}</b>${photoIcon}
           </div>
           <span class="company-cell filter-trigger-text" title="${escapeHtml(item.perusahaan)}で絞り込む" onclick="filterByCompany('${escapeHtml(item.perusahaan)}')">🏢 ${escapeHtml(item.perusahaan)}</span>
         </td>
@@ -6166,10 +6166,10 @@ function renderRecentFollowUps() {
     return;
   }
   container.innerHTML = recentFollowUpEntries.map(item => {
-    const date = item.followLegacy ? revisionT().legacy : revisionT().followDate + ': ' + item.followDate;
+    const date = item.followLegacy ? revisionT().legacy : item.followDate;
     const author = item.authorName ? '<span class="activity-item-author">' + escapeHtml(authorText(item.authorName, false)) + '</span>' : '';
     const status = item.followStatus === '完了' ? revisionT().done : item.followStatus === '未対応' ? revisionT().pending : '';
-    return '<div class="activity-item"><div class="activity-item-top"><strong>' + escapeHtml(item.nama) +
+    return '<div class="activity-item"><div class="activity-item-top"><strong>' + escapeHtml(item.nama) + nationalityFlagHtml(item) +
       '</strong><span class="activity-item-date">' + escapeHtml(date) + author + '</span></div>' +
       '<div class="company-cell">' + escapeHtml(item.perusahaan || '') + '</div>' +
       '<div class="activity-report-note">' + escapeHtml(item.catatan || '') + '</div>' +
@@ -7543,7 +7543,7 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape')closeReportC
 <style>
 .report-author-desktop{display:block;margin-top:1px;font-size:10px;line-height:1.2;color:#64748b;overflow-wrap:anywhere}.report-author-mobile{display:none}.summary-report-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:6px}.report-context-menu{position:fixed;z-index:12050;min-width:160px;padding:6px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 8px 28px #0f172a30;display:grid;gap:4px}.report-context-menu button{font:inherit;text-align:left;padding:10px 12px;min-height:42px;border:0;border-radius:5px;background:#fff;color:#0f172a;cursor:pointer}.report-context-menu button:hover,.report-context-menu button:focus-visible{background:#eff6ff}.activity-item-author{display:block;margin-top:2px;color:#64748b;font-size:10px;line-height:1.2}.attention-item-date .attention-author{display:block;color:#64748b;font-size:10px;line-height:1.2;margin-top:1px}
 @media(max-width:900px){.report-author-desktop{display:none}.report-author-mobile{display:inline-block;color:#64748b;font-size:10px;line-height:1.2;overflow-wrap:anywhere}.reports-row-actions,.summary-report-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;margin-top:6px}.reports-row-actions .reports-row-menu,.summary-report-actions .reports-row-menu{flex:0 0 auto;margin-left:auto}}
-</style></body>
-</html>
+</style>
+<style>.activity-item-author{display:inline!important;margin:0 0 0 5px!important;font-size:9px!important;line-height:1.2;color:#64748b}.attention-item-date .attention-author{display:inline!important;margin:0 0 0 5px!important;font-size:9px!important;line-height:1.2;color:#64748b}.report-author-desktop,.report-author-mobile{font-size:9px!important;line-height:1.15;margin-top:0!important}.photo-author{display:block!important;margin-top:0!important;font-size:9px!important;line-height:1.1!important}.nationality-flag{display:inline-block;margin-left:4px;font-size:1em;vertical-align:baseline}</style></body></html>
 
 
