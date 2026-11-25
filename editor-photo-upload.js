@@ -178,6 +178,13 @@
     box.append(tile);
   });
 
+  if (!reportEditorState.photos.length && !reportEditorState.newPhotos.length) {
+    const empty = document.createElement('div');
+    empty.className = 'fu-history';
+    empty.textContent = packageT().noPhotos;
+    box.append(empty);
+  }
+
   const count = document.getElementById('editorPhotoCount');
   if (count) {
     const total =
