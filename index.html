@@ -2243,6 +2243,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
     #packageTrashOverlay .package-trash-check { width: 18px; height: 18px; margin: 8px 0; cursor: pointer; }
     #packageTrashSelectedCount { align-self: center; font-size: 12px; }
     #packageTrashProgress { font-size: 12px; color: #475569; }
+  .content-author{display:block;margin-top:4px;color:#64748b;font-size:11px;line-height:1.35;font-weight:400}.photo-thumb-author{display:block;color:#64748b;font-size:10px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.photo-author{font-size:11px}
   </style>
 <style>
 .package-menu{position:relative}.package-menu summary{list-style:none;cursor:pointer;border:1px solid #cbd5e1;border-radius:7px;padding:3px 12px;font-size:20px;color:#475569;background:#fff}.package-menu summary::-webkit-details-marker{display:none}
@@ -3530,6 +3531,16 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  function authorText(name, photo) {
+    if (!name) return '';
+    const prefix = photo ? (currentLang === 'en' ? 'Uploaded by ' : 'アップロード: ') : (currentLang === 'en' ? 'By ' : '記入: ');
+    return prefix + String(name);
+  }
+  function authorLabel(name, photo) {
+    if (!name) return '';
+    return '<span class="content-author' + (photo ? ' photo-author' : '') + '">' + escapeHtml(authorText(name, photo)) + '</span>';
   }
 
   function debounce(fn, delay) {
@@ -4825,6 +4836,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
           <span class="attention-item-date">${escapeHtml(item.tanggal)}</span>
         </div>
         <div class="attention-item-note">${escapeHtml(item.catatan)}</div>
+        ${authorLabel(item.authorName, false)}
         ${existingFollowUpHtml}
         <div class="attention-actions-row">
           <button type="button" class="btn-resolve-fast" data-id="${escapeHtml(item.id)}">
@@ -5168,6 +5180,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
             <span class="activity-item-date">${escapeHtml(item.tanggal)}</span>
           </div>
           <div class="activity-item-note-clean">${safeNote}</div>
+          ${authorLabel(item.authorName, false)}
           ${followupHtml}
           <div class="activity-bottom-bar">
             <button type="button" class="btn-reopen-attention" onclick="reopenAttentionEntry('${escapeHtml(item.id)}', this)">
@@ -5232,6 +5245,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPhotoViewerForGallery(${idx});}">
           <img src="${escapeHtml(thumbUrl)}" loading="lazy" alt="${escapeHtml(item.nama)}">
           <span class="photo-thumb-caption">${escapeHtml(item.nama)}</span>
+          ${authorLabel(item.uploaderName || item.authorName, true)}
         </div>`;
     }).join('');
   }
@@ -5528,6 +5542,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
     const metaParts = [];
     if (item.tanggal) metaParts.push(item.tanggal);
     if (item.kategori) metaParts.push(item.kategori);
+    if (item.uploaderName || item.authorName) metaParts.push(authorText(item.uploaderName || item.authorName, true));
     document.getElementById('photoViewerMeta').innerText = metaParts.join(' · ');
 
     const noteEl = document.getElementById('photoViewerNote');
@@ -5891,6 +5906,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
         </td>
         <td class="summary-td-detail" style="padding:10px; border-bottom:1px solid var(--border-color); vertical-align:top; line-height:1.45;">
           ${escapeHtml(item.catatan)}
+          ${authorLabel(item.authorName, false)}
           ${followupText}
           ${reportMenuMarkup(item)}
         </td>
@@ -5939,6 +5955,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
         </td>
         <td class="report-cell-note">
           <span class="report-note-text">${escapeHtml(item.catatan)}</span>
+          ${authorLabel(item.authorName, false)}
           ${followupText}
           <div class="reports-row-actions">${reportMenuMarkup(item)}</div>
         </td>
@@ -6135,6 +6152,7 @@ function renderRecentFollowUps() {
       '<div class="company-cell">' + escapeHtml(item.perusahaan || '') + '</div>' +
       '<div class="activity-report-note">' + escapeHtml(item.catatan || '') + '</div>' +
       '<div class="activity-item-note-clean">' + escapeHtml(item.followNote) + '</div>' +
+      authorLabel(item.authorName, false) +
       '<div class="recent-follow-up-footer"><span>' + escapeHtml(status) + '</span>' +
       '<button type="button" class="report-history-link" title="' + escapeHtml(revisionT().records) + '" aria-label="' + escapeHtml(revisionT().records) +
       '" onclick="openFollowUpModalById(\'' + escapeHtml(item.id) + '\')">↪</button></div></div>';
@@ -6615,7 +6633,7 @@ function renderFollowUpHistory() {
     const row = document.createElement('div'); row.className = 'fu-history-row';
     const meta = document.createElement('div'); meta.className = 'fu-history-meta';
     const label = item.legacy ? revisionT().legacy : revisionT().followDate + ': ' + item.eventDate + ' · ' + revisionT().recorded + ': ' + item.recordedAt;
-    meta.textContent = label + (item.actor ? ' · ' + item.actor : '');
+    meta.textContent = label + (item.authorName ? ' · ' + authorText(item.authorName, false) : '');
     const note = document.createElement('div'); note.textContent = item.note; note.className = 'fu-history-note';
     row.append(meta, note);
     container.appendChild(row);
@@ -7088,8 +7106,8 @@ function packageCanEdit(){return !!packageEntry && packageLoaded && !packageBusy
 function renderPackagePhotos(){
  const box=document.getElementById('packagePhotos');box.replaceChildren();if(!packagePhotos.length){box.textContent=packageT().noPhotos;return;}
  packagePhotos.forEach(photo=>{const card=document.createElement('div');card.className='package-photo';const img=document.createElement('img');img.src=toThumbnailUrl(photo.url,'w240');img.alt=packageT().photo;
- const button=document.createElement('button');button.type='button';button.className='revision-small-button package-danger';button.textContent=packageT().removePhoto;
- button.onclick=()=>{if(packageCanEdit())showPackageConfirm({method:'trashJournalItem',args:['photo',packageEntry.id,photo.id],title:packageT().removePhoto,description:packageReportLabel(packageEntry),permanent:false});};card.append(img,button);box.appendChild(card);});
+ const by=document.createElement('div');by.innerHTML=authorLabel(photo.uploaderName || packageEntry.authorName, true);card.append(img,by);const button=document.createElement('button');button.type='button';button.className='revision-small-button package-danger';button.textContent=packageT().removePhoto;
+ button.onclick=()=>{if(packageCanEdit())showPackageConfirm({method:'trashJournalItem',args:['photo',packageEntry.id,photo.id],title:packageT().removePhoto,description:packageReportLabel(packageEntry),permanent:false});};card.append(button);box.appendChild(card);});
 }
 function packageReportLabel(entry){return (entry.nama||entry.name||'')+' · '+(entry.tanggal||entry.date||'')+'\n'+String(entry.catatan||entry.note||'').slice(0,220);}
 function confirmReportTrash(){if(!packageCanEdit())return;showPackageConfirm({method:'trashJournalItem',args:['report',packageEntry.id,''],title:packageT().removeReport,description:packageReportLabel(packageEntry),permanent:false});}
@@ -7266,7 +7284,7 @@ async function reloadPackageManager(){
 function closePackageManager(){if(packageBusy)return;packageLoadSequence++;document.getElementById('packageManagerOverlay').hidden=true;document.getElementById('reportsModalOverlay').classList.remove('report-detail-open');managerPendingFollow=null;packageEntry=null;packageLoaded=false;packageManage=false;syncReportsScrollLock();if(reportMenuFocus&&reportMenuFocus.isConnected)reportMenuFocus.focus({preventScroll:true});}
 function renderManagedHistory(){
  const box=document.getElementById('packageManagedHistory');box.replaceChildren();if(!packageHistory.length){box.textContent=reportsT().noHistory;return;}
- packageHistory.forEach(item=>{const row=document.createElement('div');row.className='fu-history-row';const meta=document.createElement('div');meta.className='fu-history-meta';meta.textContent=item.legacy?revisionT().legacy:(item.eventDate||'')+' · '+(item.recordedAt||'');const note=document.createElement('div');note.textContent=item.note;
+ packageHistory.forEach(item=>{const row=document.createElement('div');row.className='fu-history-row';const meta=document.createElement('div');meta.className='fu-history-meta';meta.textContent=(item.legacy?revisionT().legacy:(item.eventDate||'')+' · '+(item.recordedAt||''))+(item.authorName?' · '+authorText(item.authorName,false):'');const note=document.createElement('div');note.textContent=item.note;
   const remove=document.createElement('button');remove.type='button';remove.className='revision-small-button package-danger';remove.textContent=packageT().removeFollow;remove.onclick=()=>confirmFollowTrash(item);row.append(meta,note,remove);box.appendChild(row);});
 }
 function confirmReportFromRow(id){if(packageBusy||reportsSelecting||reportsLoading)return;const entry=reportContext(id);if(!entry)return;closeReportMenus();showPackageConfirm({method:'trashJournalItem',args:['report',id,''],kind:'report',title:packageT().removeReport,description:packageReportLabel(entry),permanent:false,returnFocus:reportActionsFocus});}
@@ -7324,7 +7342,7 @@ document.getElementById('fuNoteInput').addEventListener('input',updateFollowSave
 document.getElementById('fuTargetStatus').addEventListener('change',updateFollowSaveButton);
 function reportActionsHtml(item){
  const history=item.followHistory&&item.followHistory.length?item.followHistory:(item.catatanFollowUp?[{note:item.catatanFollowUp}]:[]);
- return history.map(action=>'<div class="report-action-line">↳ <b>'+escapeHtml(i18n[currentLang].followSummary)+'</b> '+escapeHtml(action.note)+'</div>').join('');
+ return history.map(action=>'<div class="report-action-line">↳ <b>'+escapeHtml(i18n[currentLang].followSummary)+'</b> '+escapeHtml(action.note)+authorLabel(action.authorName,false)+'</div>').join('');
 }
 function appendCardHistory(card,item){
  card.querySelectorAll('.attention-item-followup,.activity-item-note-clean,.card-history-fold').forEach(e=>e.remove());
@@ -7332,7 +7350,7 @@ function appendCardHistory(card,item){
  if(!history.length)return;
  const key=card.className+':'+item.id,stack=document.createElement('div');stack.className='follow-action-stack';
  const body=document.createElement('div'),older=document.createElement('div');older.hidden=!cardHistoryOpen.has(key);
- function renderAction(action){const row=document.createElement('div');row.className='follow-action-entry';const note=document.createElement('div');note.innerHTML='↳ <b>'+escapeHtml(i18n[currentLang].followSummary)+'</b> '+escapeHtml(action.note);row.append(note);if(action.eventDate){const date=document.createElement('div');date.className='fu-history-meta';date.textContent=action.eventDate;row.append(date);}return row;}
+ function renderAction(action){const row=document.createElement('div');row.className='follow-action-entry';const note=document.createElement('div');note.innerHTML='↳ <b>'+escapeHtml(i18n[currentLang].followSummary)+'</b> '+escapeHtml(action.note);row.append(note);if(action.authorName){const by=document.createElement('div');by.innerHTML=authorLabel(action.authorName,false);row.append(by);}if(action.eventDate){const date=document.createElement('div');date.className='fu-history-meta';date.textContent=action.eventDate;row.append(date);}return row;}
  history.slice(0,-1).forEach(action=>older.append(renderAction(action)));body.append(older,renderAction(history[history.length-1]));
  if(history.length>1){const arrow=document.createElement('button');arrow.type='button';arrow.className='follow-fold-arrow';const update=()=>{arrow.setAttribute('aria-expanded',String(!older.hidden));arrow.setAttribute('aria-label',currentLang==='ja'?older.hidden?'以前の対応を表示':'以前の対応を閉じる':older.hidden?'Show previous follow-ups':'Hide previous follow-ups');};update();arrow.onclick=()=>{older.hidden=!older.hidden;if(older.hidden)cardHistoryOpen.delete(key);else cardHistoryOpen.add(key);update();};stack.append(arrow);}else stack.classList.add('single-action');
  stack.append(body);const footer=card.querySelector('.attention-actions-row,.recent-follow-up-footer');if(footer)card.insertBefore(stack,footer);else card.append(stack);
