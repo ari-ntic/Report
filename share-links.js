@@ -356,3 +356,62 @@
   window.addEventListener('report-login', () => { if (new URLSearchParams(window.location.search).has('view')) { routeHandled = false; routeApplying = false; window.setTimeout(applyAddressRoute, 0); } }); window.addEventListener('popstate', () => { routeHandled = false; routeApplying = false; applyAddressRoute(); });
   if (new URLSearchParams(window.location.search).has('view')) window.setTimeout(() => { const loginOverlay = document.getElementById('reportLogin'); if (!routeHandled && !isOpen(loginOverlay)) applyAddressRoute(); }, 1200);
 })();
+
+
+/* Recover report details modal from a delayed or lost package response. */
+window.reloadPackageManager = async function() {
+  if (!packageEntry) return;
+  const id = packageEntry.id;
+  const sequence = ++packageLoadSequence;
+  let timeoutId;
+  packageLoaded = false;
+  updateReportsControls();
+  renderPackageRequestState(
+    managerText('写真を読み込み中…', 'Loading photos…'),
+    revisionT().historyLoading
+  );
+  const showFailure = (message) => {
+    if (sequence !== packageLoadSequence || !packageEntry || packageEntry.id !== id) return;
+    packageLoaded = false;
+    updateReportsControls();
+    renderPackageRequestState(packageT().failed, revisionT().historyError);
+    const body = document.getElementById('packageManagerBody');
+    const errorBox = document.createElement('div');
+    errorBox.className = 'package-error';
+    errorBox.setAttribute('role', 'alert');
+    errorBox.textContent = message;
+    const retryButton = document.createElement('button');
+    retryButton.type = 'button';
+    retryButton.className = 'revision-small-button';
+    retryButton.textContent = currentLang === 'ja' ? 'もう一度読み込む' : 'Retry loading';
+    body.append(errorBox, retryButton);
+    if (retryButton) retryButton.addEventListener('click', () => {
+      reloadPackageManager().then(() => setupReportEditor());
+    }, { once: true });
+  };
+  try {
+    const result = await Promise.race([
+      menuRpc('getJournalPackage', id),
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(
+          currentLang === 'ja'
+            ? '読み込みに時間がかかっています。もう一度お試しください。'
+            : 'Loading is taking longer than expected. Please retry.'
+        )), 45000);
+      })
+    ]);
+    if (sequence !== packageLoadSequence || !packageEntry || packageEntry.id !== id) return;
+    if (!result || !result.success) throw new Error(result && result.message || packageT().failed);
+    if (result.report) packageEntry = result.report;
+    packagePhotos = result.photos || [];
+    packageHistory = result.history || [];
+    packageLoaded = true;
+    renderPackagePhotos();
+    renderManagedHistory();
+    updateReportsControls();
+  } catch (error) {
+    showFailure(error && error.message || packageT().failed);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
