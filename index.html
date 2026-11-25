@@ -7247,6 +7247,10 @@ function reportMenuMarkup(item){return '<button type="button" class="revision-sm
 function openReportActions(id){if(packageBusy||reportsSelecting||reportsLoading)return;reportActionsFocus=document.activeElement;openPackageManager(id);}
 function closeReportActions(restoreFocus=true){if(packageBusy)return;document.getElementById('packageRowActionsOverlay').hidden=true;reportActionsEntry=null;syncReportsScrollLock();if(restoreFocus&&reportActionsFocus&&reportActionsFocus.isConnected)reportActionsFocus.focus({preventScroll:true});}
 function reportContext(id){return reportsPageEntries.find(e=>e.id===id)||summaryMenuEntries.find(e=>e.id===id)||null;}
+function renderPackageRequestState(photoMessage, historyMessage) {
+ const body=document.getElementById('packageManagerBody');if(!body)return;body.replaceChildren();
+ [[editorLabel('📷 写真','📷 Photos'),photoMessage],[revisionT().records,historyMessage]].forEach(([label,message])=>{const field=document.createElement('div');field.className='editor-field';const title=document.createElement('label');title.textContent=label;const state=document.createElement('div');state.className='fu-history';state.textContent=message;field.append(title,state);body.append(field);});
+}
 async function openPackageManager(id){
  if(packageBusy||reportsSelecting||reportsLoading)return;const entry=reportContext(id);if(!entry)return;reportMenuFocus=reportActionsFocus||document.activeElement;closeReportMenus();
  packageEntry=Object.assign({},entry);packageLoaded=false;packageManage=true;packagePhotos=[];packageHistory=[];updatePackageLabels();updateReportsControls();
@@ -7254,10 +7258,10 @@ async function openPackageManager(id){
  prepareInlineManager();document.getElementById('packageManagerOverlay').hidden=false;syncReportsScrollLock();document.getElementById('packageManagerClose').focus();await reloadPackageManager();setupReportEditor();
 }
 async function reloadPackageManager(){
- if(!packageEntry)return;const id=packageEntry.id,sequence=++packageLoadSequence;packageLoaded=false;updateReportsControls();document.getElementById('packagePhotos').textContent=packageT().loading;document.getElementById('packageManagedHistory').textContent=revisionT().historyLoading;
+ if(!packageEntry)return;const id=packageEntry.id,sequence=++packageLoadSequence;packageLoaded=false;updateReportsControls();renderPackageRequestState(managerText('写真を読み込み中…','Loading photos…'),revisionT().historyLoading);document.getElementById('packagePhotos').textContent=packageT().loading;document.getElementById('packageManagedHistory').textContent=revisionT().historyLoading;
  try{const result=await menuRpc('getJournalPackage',id);if(sequence!==packageLoadSequence||!packageEntry||packageEntry.id!==id)return;if(!result||!result.success)throw Error(result&&result.message||packageT().failed);
   if(result.report)packageEntry=result.report;packagePhotos=result.photos||[];packageHistory=result.history||[];packageLoaded=true;renderPackagePhotos();renderManagedHistory();updateReportsControls();
- }catch(err){if(sequence!==packageLoadSequence)return;document.getElementById('packageManagerError').textContent=err.message||packageT().failed;document.getElementById('packagePhotos').textContent=packageT().failed;document.getElementById('packageManagedHistory').textContent=revisionT().historyError;}
+ }catch(err){if(sequence!==packageLoadSequence)return;document.getElementById('packageManagerError').textContent=err.message||packageT().failed;document.getElementById('packagePhotos').textContent=packageT().failed;document.getElementById('packageManagedHistory').textContent=revisionT().historyError;renderPackageRequestState(packageT().failed,revisionT().historyError);const error=document.createElement('div');error.className='package-error';error.textContent=err.message||packageT().failed;document.getElementById('packageManagerBody').append(error);}
 }
 function closePackageManager(){if(packageBusy)return;packageLoadSequence++;document.getElementById('packageManagerOverlay').hidden=true;document.getElementById('reportsModalOverlay').classList.remove('report-detail-open');managerPendingFollow=null;packageEntry=null;packageLoaded=false;packageManage=false;syncReportsScrollLock();if(reportMenuFocus&&reportMenuFocus.isConnected)reportMenuFocus.focus({preventScroll:true});}
 function renderManagedHistory(){
