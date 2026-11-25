@@ -64,7 +64,7 @@
   }
 
   function syncAddress(replace) {
-    const loginOverlay = document.getElementById('reportLogin');    if (applyingAddress || isOpen(loginOverlay)) return;
+    const loginOverlay = document.getElementById('reportLogin');    if (applyingAddress || isOpen(loginOverlay) || (!routeHandled && new URLSearchParams(window.location.search).has('view'))) return;
     const next = addressFor(visibleRoute());
     const current = window.location.pathname + window.location.search + window.location.hash;
     if (next === current) return;
