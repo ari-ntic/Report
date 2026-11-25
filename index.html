@@ -7293,17 +7293,25 @@ function renderPackageRequestState(photoMessage, historyMessage) {
 }
 async function openPackageManager(id){
  if(packageBusy||reportsSelecting||reportsLoading)return;const entry=reportContext(id);if(!entry)return;reportMenuFocus=reportActionsFocus||document.activeElement;closeReportMenus();
- packageEntry=Object.assign({},entry);packageLoaded=false;packageManage=true;packagePhotos=[];packageHistory=[];updatePackageLabels();updateReportsControls();
- 
+ const save=document.getElementById('editorSave');if(save)save.remove();reportEditorState=null;packageEntry=Object.assign({},entry);packageLoaded=false;packageManage=true;packagePhotos=[];packageHistory=[];updatePackageLabels();updateReportsControls();
  prepareInlineManager();document.getElementById('packageManagerOverlay').hidden=false;syncReportsScrollLock();document.getElementById('packageManagerClose').focus();await reloadPackageManager();
 }
 async function reloadPackageManager(){
- if(!packageEntry)return;const id=packageEntry.id,sequence=++packageLoadSequence;packageLoaded=false;updateReportsControls();renderPackageRequestState(managerText('写真を読み込み中…','Loading photos…'),revisionT().historyLoading);
- try{const result=await menuRpc('getJournalPackage',id);if(sequence!==packageLoadSequence||!packageEntry||packageEntry.id!==id)return;if(!result||!result.success)throw Error(result&&result.message||packageT().failed);
-  if(result.report)packageEntry=result.report;packagePhotos=result.photos||[];packageHistory=result.history||[];packageLoaded=true;setupReportEditor();updateReportsControls();
- }catch(err){if(sequence!==packageLoadSequence)return;if(!document.getElementById('packageManagerError'))renderPackageRequestState(packageT().failed,revisionT().historyError);const error=document.createElement('div');error.className='package-error';error.textContent=err.stack||err.message||packageT().failed;document.getElementById('packageManagerBody').append(error);}
+ if(!packageEntry)return;const id=String(packageEntry.id||''),overlay=document.getElementById('packageManagerOverlay');if(!id||!overlay||overlay.hidden)return;
+ const token={};overlay.__packageLoadToken=token;const isCurrent=()=>overlay.__packageLoadToken===token&&document.contains(overlay)&&!overlay.hidden&&packageEntry&&packageEntry.id===id;
+ let timeoutId=0;packageLoaded=false;packagePhotos=[];packageHistory=[];reportEditorState=null;updateReportsControls();renderPackageRequestState(managerText('写真を読み込み中…','Loading photos…'),revisionT().historyLoading);
+ try{
+  const result=await Promise.race([menuRpc('getJournalPackage',id),new Promise((_,reject)=>{timeoutId=window.setTimeout(()=>reject(Error('package-load-timeout')),30000);})]);
+  if(!isCurrent())return;if(!result||!result.success)throw Error(result&&result.message||packageT().failed);
+  if(result.report)packageEntry=Object.assign({},packageEntry,result.report,{id});packagePhotos=Array.isArray(result.photos)?result.photos:[];packageHistory=Array.isArray(result.history)?result.history:[];packageLoaded=true;setupReportEditor();updateReportsControls();
+ }catch(err){
+  if(!isCurrent())return;console.error('[Report] Failed to load report editor data',id,err);
+  packageLoaded=false;renderPackageRequestState(packageT().failed,revisionT().historyError);
+  const body=document.getElementById('packageManagerBody');if(!body)return;const error=document.createElement('div');error.className='package-error';error.setAttribute('role','alert');error.textContent=currentLang==='ja'?'写真・対応記録を読み込めませんでした。接続を確認して再試行してください。':'Could not load photos and follow-ups. Check the connection and retry.';
+  const retry=document.createElement('button');retry.type='button';retry.className='revision-small-button';retry.textContent=editorLabel('もう一度読み込む','Retry loading');retry.onclick=()=>reloadPackageManager();body.append(error,retry);updateReportsControls();
+ }finally{if(timeoutId)window.clearTimeout(timeoutId);}
 }
-function closePackageManager(){if(packageBusy)return;packageLoadSequence++;document.getElementById('packageManagerOverlay').hidden=true;document.getElementById('reportsModalOverlay').classList.remove('report-detail-open');managerPendingFollow=null;packageEntry=null;packageLoaded=false;packageManage=false;syncReportsScrollLock();if(reportMenuFocus&&reportMenuFocus.isConnected)reportMenuFocus.focus({preventScroll:true});}
+function closePackageManager(){if(packageBusy)return;packageLoadSequence++;const overlay=document.getElementById('packageManagerOverlay');if(overlay){overlay.__packageLoadToken=null;overlay.hidden=true;}document.getElementById('reportsModalOverlay').classList.remove('report-detail-open');managerPendingFollow=null;packageEntry=null;packagePhotos=[];packageHistory=[];packageLoaded=false;packageManage=false;reportEditorState=null;document.getElementById('editorSave')?.remove();syncReportsScrollLock();if(reportMenuFocus&&reportMenuFocus.isConnected)reportMenuFocus.focus({preventScroll:true});}
 function renderManagedHistory(){
  const box=document.getElementById('packageManagedHistory');if(!box)return;box.replaceChildren();if(!packageHistory.length){box.textContent=reportsT().noHistory;return;}
  packageHistory.forEach(item=>{const row=document.createElement('div');row.className='fu-history-row';const meta=document.createElement('div');meta.className='fu-history-meta';meta.textContent=(item.legacy?revisionT().legacy:(item.eventDate||'')+' · '+(item.recordedAt||''))+(item.authorName?' · '+authorText(item.authorName,false):'');const note=document.createElement('div');note.textContent=item.note;
