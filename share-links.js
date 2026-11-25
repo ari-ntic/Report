@@ -11,7 +11,7 @@
   const MANAGED_KEYS = ['view', 'pageNo', 'id', ...FILTER_KEYS];
 
   function isOpen(el) {
-    return !!el && !el.hidden && el.getAttribute('aria-hidden') !== 'true' && getComputedStyle(el).display !== 'none';
+    return !!el && !el.hidden && el.getAttribute('aria-hidden') !== 'true' && getComputedStyle(el).display !== 'none' && el.getClientRects().length > 0;
   }
 
   function cleanFilter(value) {
