@@ -5772,7 +5772,7 @@ function changeLanguage(lang) {
     const list = (lastDashboardData && lastDashboardData.latestPhotos) || [];
     if (!list[idx]) return;
     const photos = list.map(function(item) {
-      return { url: item.fotoUrl, nama: item.nama, nationality: item.nationality, tanggal: item.tanggal, kategori: item.kategori, catatan: item.catatan };
+      return { url: item.fotoUrl, nama: item.nama, nationality: item.nationality, authorName: item.authorName, tanggal: item.tanggal, kategori: item.kategori, catatan: item.catatan };
     });
     openPhotoViewer(photos, idx);
   }
@@ -5859,7 +5859,7 @@ function changeLanguage(lang) {
   function openViewerFromGalleryModal(idx) {
     if (!currentGalleryPhotos[idx]) return;
     const photos = currentGalleryPhotos.map(function(item) {
-      return { url: item.fotoUrl, nama: item.nama, nationality: item.nationality, tanggal: item.tanggal, kategori: item.kategori, catatan: item.catatan };
+      return { url: item.fotoUrl, nama: item.nama, nationality: item.nationality, authorName: item.authorName, tanggal: item.tanggal, kategori: item.kategori, catatan: item.catatan };
     });
     openPhotoViewer(photos, idx);
   }
