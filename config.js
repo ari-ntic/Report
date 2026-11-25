@@ -2,7 +2,7 @@
 window.REPORT_CONFIG = Object.freeze({
   "endpoint": "https://script.google.com/macros/s/AKfycbyzRbicR1P6DQSDEWvlk4ZtLfFq0t-Bp1cz6PmO4zYlE0EY4iXAcH76ncZjWyPVDRxl/exec",
   "googleClientId": "944078371411-vnpflgssji1vrhqrlcf0d30mnthbb6t2.apps.googleusercontent.com",
-  "version": "github-migration-5",
+  "version": "github-migration-6-authorship",
   "methods": [
     "getInitialData",
     "getJurnalBootstrap",
@@ -40,7 +40,8 @@ window.REPORT_CONFIG = Object.freeze({
     "requestReportAccess",
     "listReportAccess",
     "decideReportAccess",
-    "revokeReportAccess"
+    "revokeReportAccess",
+    "updateReportUserProfile"
   ],
   "connectTimeoutMs": 60000,
   "requestTimeoutMs": 180000
