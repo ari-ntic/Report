@@ -143,7 +143,7 @@
 
 
   function photoViewerItems(items) {
-    return (items || []).map(item => ({ url: item.fotoUrl || item.url, nama: item.nama || '', tanggal: item.tanggal || '', kategori: item.kategori || '', catatan: item.catatan || '' }));
+    return (items || []).map(item => ({ url: item.fotoUrl || item.url, nama: item.nama || '', nationality: item.nationality || '', authorName: item.authorName || item.uploaderName || '', tanggal: item.tanggal || '', kategori: item.kategori || '', catatan: item.catatan || '' }));
   }
 
   function samePhotoList(viewerItems, sourceItems) {
