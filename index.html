@@ -5915,7 +5915,7 @@ function changeLanguage(lang) {
       html += `<tr class="summary-row">
         <td class="summary-td-urgency" style="padding:10px; border-bottom:1px solid var(--border-color); vertical-align:top; white-space:nowrap;">
           <span class="badge ${badgeClass} filter-trigger-badge" title="${escapeHtml(item.urgensi)}で絞り込む" onclick="filterByUrgency('${escapeHtml(item.urgensi)}')">${escapeHtml(item.urgensi)}</span>
-          <span class="company-cell">${escapeHtml(item.tanggal)}</span>${authorLabel(item.authorName, false)}
+          <span class="company-cell">${escapeHtml(item.tanggal)}</span>${authorLabel(item.authorName, false)}${authorLabel(item.authorName, false)}
         </td>
         <td class="summary-td-name" style="padding:10px; border-bottom:1px solid var(--border-color); vertical-align:top;">
           <div style="display:inline-flex; align-items:center; gap:3px;">
@@ -5964,7 +5964,7 @@ function changeLanguage(lang) {
       html += `<tr>
         <td class="report-cell-urgency">${reportSelectMarkup(item)}
           <span class="badge ${badgeClass} filter-trigger-badge" title="${escapeHtml(item.urgensi)}で絞り込む" onclick="filterByUrgency('${escapeHtml(item.urgensi)}')">${escapeHtml(item.urgensi)}</span>
-          <span class="company-cell">${escapeHtml(item.tanggal)}</span>${authorLabel(item.authorName, false)}
+          <span class="company-cell">${escapeHtml(item.tanggal)}</span>${authorLabel(item.authorName, false)}${authorLabel(item.authorName, false)}
         </td>
         <td class="report-cell-person">
           <div style="display:inline-flex; align-items:center;">
