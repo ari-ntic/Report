@@ -2910,7 +2910,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
 
   let currentPage = 1;
   let lastJurnalPageResult = null;
-  let lastDashboardData = { attentionList: [], latestActivity: [], latestPhotos: [] };
+  let dashboardDataReady=false,recentFollowUpsLoaded=false,lastDashboardData={ attentionList: [], latestActivity: [], latestPhotos: [] };
   let latestTop5Summary = [];
 
   let currentFollowUpEntry = null;
@@ -3509,9 +3509,9 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
     parseAndPreviewSingle(document.getElementById('singleInput').value);
     updateRevisionLabels();
 
-    renderAttentionList(lastDashboardData.attentionList);
-    renderRecentFollowUps();
-    renderPhotoGallery(lastDashboardData.latestPhotos);
+    if(dashboardDataReady)renderAttentionList(lastDashboardData.attentionList);
+    if(recentFollowUpsLoaded)renderRecentFollowUps();
+    if(dashboardDataReady)renderPhotoGallery(lastDashboardData.latestPhotos);
     if (mainLoadState.journal) warmMainMenus();
 
     if (lastJurnalPageResult) {
@@ -4741,7 +4741,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
 
 
   function applyDashboardData(data) {
-    lastDashboardData = data || { attentionList: [], latestActivity: [], latestPhotos: [] };
+    dashboardDataReady=true;lastDashboardData = data || { attentionList: [], latestActivity: [], latestPhotos: [] };
     loadRecentFollowUps();
     renderAttentionList(lastDashboardData.attentionList);
     
@@ -5237,7 +5237,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
   }
 
   window.addEventListener('resize', debounce(function() {
-    if (lastDashboardData && lastDashboardData.latestPhotos) {
+    if (dashboardDataReady && lastDashboardData.latestPhotos) {
       renderPhotoGallery(lastDashboardData.latestPhotos);
     }
   }, 250));
@@ -6109,7 +6109,7 @@ function loadRecentFollowUps() {
   showRecentFollowUpMessage(revisionT().historyLoading);
   google.script.run.withSuccessHandler(result => {
     if (sequence !== recentFollowUpSequence) return;
-    recentFollowUpEntries = (result && result.entries || []).filter((item,index,entries)=>entries.findIndex(other=>other.id===item.id)===index);
+    recentFollowUpsLoaded=true;recentFollowUpEntries = (result && result.entries || []).filter((item,index,entries)=>entries.findIndex(other=>other.id===item.id)===index);
     markMainLoadReady("followups");
     renderRecentFollowUps();
   }).withFailureHandler(() => {
@@ -6219,7 +6219,7 @@ function setupMobilePanelLayout() {
   function apply() {
     if (media.matches) nodes.forEach(node => layout.appendChild(node));
     else nodes.forEach((node, i) => homes[i].after(node));
-    if (lastDashboardData) renderPhotoGallery(lastDashboardData.latestPhotos);
+    if (dashboardDataReady) renderPhotoGallery(lastDashboardData.latestPhotos);
   }
   media.addEventListener('change', apply);
   apply();
