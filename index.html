@@ -7291,11 +7291,23 @@ function renderPackageRequestState(photoMessage, historyMessage) {
  const body=document.getElementById('packageManagerBody');if(!body)return;body.replaceChildren();
  [[editorLabel('📷 写真','📷 Photos'),photoMessage],[revisionT().records,historyMessage]].forEach(([label,message])=>{const field=document.createElement('div');field.className='editor-field';const title=document.createElement('label');title.textContent=label;const state=document.createElement('div');state.className='fu-history';state.textContent=message;field.append(title,state);body.append(field);});
 }
+function beginPackageManager(entry){
+ const id=String(entry&&entry.id||'');if(!id)return;
+ const overlay=document.getElementById('packageManagerOverlay');if(!overlay)return;
+ const save=document.getElementById('editorSave');if(save)save.remove();reportEditorState=null;
+ overlay.__packageLoadToken=null;packageEntry=Object.assign({},entry,{id});packageLoaded=false;packageManage=true;packagePhotos=[];packageHistory=[];
+ updatePackageLabels();updateReportsControls();prepareInlineManager();overlay.hidden=false;syncReportsScrollLock();document.getElementById('packageManagerClose').focus();
+ return reloadPackageManager();
+}
 async function openPackageManager(id){
  if(packageBusy||reportsSelecting||reportsLoading)return;const entry=reportContext(id);if(!entry)return;reportMenuFocus=reportActionsFocus||document.activeElement;closeReportMenus();
- const save=document.getElementById('editorSave');if(save)save.remove();reportEditorState=null;packageEntry=Object.assign({},entry);packageLoaded=false;packageManage=true;packagePhotos=[];packageHistory=[];updatePackageLabels();updateReportsControls();
- prepareInlineManager();document.getElementById('packageManagerOverlay').hidden=false;syncReportsScrollLock();document.getElementById('packageManagerClose').focus();await reloadPackageManager();
+ await beginPackageManager(entry);
 }
+async function openPackageManagerFromRoute(id){
+ if(!id)return;reportMenuFocus=document.activeElement;closeReportMenus();
+ await beginPackageManager({id:String(id)});
+}
+window.openPackageManagerFromRoute=openPackageManagerFromRoute;
 async function reloadPackageManager(){
  if(!packageEntry)return;const id=String(packageEntry.id||''),overlay=document.getElementById('packageManagerOverlay');if(!id||!overlay||overlay.hidden)return;
  const token={};overlay.__packageLoadToken=token;const isCurrent=()=>overlay.__packageLoadToken===token&&document.contains(overlay)&&!overlay.hidden&&packageEntry&&packageEntry.id===id;
@@ -7514,7 +7526,7 @@ async function managerMutation(method,args){
 </script>
 
   <script src="editor-photo-upload.js?v=2"></script>
-  <script src="share-links.js?v=11"></script>
+  <script src="share-links.js?v=12"></script>
 <style>#reportsSummaryPanel .summary-td-detail>.content-author,#recentTableBody .report-cell-note>.content-author{display:none!important}#reportsSummaryPanel .summary-td-urgency>.content-author,#recentTableBody .report-cell-urgency>.content-author{display:block;margin-top:1px;font-size:10px;line-height:1.15;color:#64748b;overflow-wrap:anywhere}</style></body>
 </html>
 
