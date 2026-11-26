@@ -7763,3 +7763,24 @@ body{background-color:#f1f5f9!important}
   .photo-viewer-thumb-item:focus:not(.is-active) { outline: none !important; }
 }
 </style>
+
+<style id="revision-reports-modal-header-layout">
+#reportsModalOverlay .gallery-modal-header { position:relative !important; display:flex !important; justify-content:center !important; align-items:center !important; padding:0 52px 10px !important; }
+#reportsModalOverlay .gallery-modal-header > div:first-child { width:100% !important; min-width:0 !important; display:flex !important; justify-content:center !important; align-items:center !important; flex-wrap:wrap !important; gap:4px 12px !important; text-align:center !important; }
+#reportsModalOverlay #lblRecentTitle { text-align:center !important; white-space:normal !important; }
+#reportsModalOverlay #countBadge { text-align:center !important; white-space:normal !important; }
+#reportsModalOverlay .gallery-modal-header > .gallery-modal-close-btn { position:absolute !important; right:0 !important; top:50% !important; transform:translateY(-50%) !important; }
+@media (max-width:600px) {
+  #reportsModalOverlay .gallery-modal-header { flex-direction:column !important; gap:3px !important; padding:0 48px 8px !important; }
+  #reportsModalOverlay .gallery-modal-header > div:first-child { flex-direction:column !important; gap:2px !important; }
+  #reportsModalOverlay .gallery-modal-header > .gallery-modal-close-btn { top:0 !important; transform:none !important; }
+}
+</style>
+<script id="revision-reports-count-separator">
+(function(){
+  if(typeof i18n!=="undefined"){
+    if(i18n.ja)i18n.ja.countBadgeTemplate="{total}件中 {shown}件表示 · ページ {page}/{totalPages}";
+    if(i18n.en)i18n.en.countBadgeTemplate="{shown} of {total} shown · page {page}/{totalPages}";
+  }
+})();
+</script>
