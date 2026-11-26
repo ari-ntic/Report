@@ -7801,3 +7801,12 @@ body{background-color:#f1f5f9!important}
   #reportsSummaryPanel .summary-th-name, #reportsModalOverlay .table-wrapper thead th:nth-child(2) { white-space:nowrap !important; }
 }
 </style>
+
+<style id="revision-word-safe-report-headers">
+#reportsSummaryPanel thead th, #reportsModalOverlay .table-wrapper thead th { overflow-wrap:normal !important; word-break:normal !important; }
+#reportsSummaryPanel .summary-th-urgency, #reportsSummaryPanel .summary-td-urgency, #reportsModalOverlay .table-wrapper thead th:first-child, #reportsModalOverlay .table-wrapper tbody td:first-child { width:110px !important; min-width:110px !important; }
+@media (max-width:600px) {
+  #reportsSummaryPanel .summary-th-urgency, #reportsModalOverlay .table-wrapper thead th:first-child { white-space:normal !important; overflow-wrap:normal !important; word-break:normal !important; font-size:10px !important; }
+  #reportsSummaryPanel .summary-th-name, #reportsModalOverlay .table-wrapper thead th:nth-child(2) { white-space:normal !important; overflow-wrap:normal !important; word-break:normal !important; }
+}
+</style>
