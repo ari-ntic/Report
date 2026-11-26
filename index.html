@@ -7693,3 +7693,34 @@ body{background-color:#f1f5f9!important}
  }
 })();
 </script>
+
+        
+
+<script id="revision-20261126-clear-home-photo-viewer-after-editor-save">
+/* A home-origin report save must return to home, even if a photo route was left stale. */
+(function(){
+  var previousSave=window.saveReportEditor;
+  if(typeof previousSave!=="function"||previousSave.__clearsHomePhotoRoute)return;
+  var wrappedSave=async function(){
+    var reports=document.getElementById("reportsModalOverlay");
+    var editor=document.getElementById("packageManagerOverlay");
+    var openedFromReports=!!(reports&&reports.classList.contains("is-open")&&editor&&reports.contains(editor));
+    var result=await previousSave.apply(this,arguments);
+    if(packageEntry===null&&!openedFromReports){
+      /* Use the app's own closer to clear photo arrays, image source, zoom and route hooks. */
+      if(typeof window.closePhotoViewer==="function")window.closePhotoViewer();
+      var viewer=document.getElementById("photoViewerOverlay");
+      if(viewer)viewer.classList.remove("is-open");
+      var image=document.getElementById("photoViewerImg");
+      if(image)image.removeAttribute("src");
+      /* Prevent address-route restoration from reopening the photo just closed. */
+      var url=new URL(window.location.href);
+      ["view","id","pageNo","photoSource","photoPage"].forEach(function(key){url.searchParams.delete(key);});
+      window.history.replaceState(window.history.state,"",url.pathname+url.search+url.hash);
+    }
+    return result;
+  };
+  wrappedSave.__clearsHomePhotoRoute=true;
+  window.saveReportEditor=wrappedSave;
+})();
+</script>
