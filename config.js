@@ -1,8 +1,8 @@
-/* Public endpoint only. No passwords, tokens, Sheets data or photo data. */
+/* Development endpoint only. No passwords, tokens, Sheets data or photo data. */
 window.REPORT_CONFIG = Object.freeze({
-  "endpoint": "https://script.google.com/macros/s/AKfycbyzRbicR1P6DQSDEWvlk4ZtLfFq0t-Bp1cz6PmO4zYlE0EY4iXAcH76ncZjWyPVDRxl/exec",
+  "endpoint": "https://script.google.com/macros/s/AKfycbxnoXY6CFr5YYwrCrKxy06evC9a6qeFPWS4zeDT9d5cqTiPryZqgAm2peVG6q6i4QEi/exec",
   "googleClientId": "944078371411-vnpflgssji1vrhqrlcf0d30mnthbb6t2.apps.googleusercontent.com",
-  "version": "github-migration-6-authorship",
+  "version": "development-db-test-1",
   "methods": [
     "getInitialData",
     "getJurnalBootstrap",
