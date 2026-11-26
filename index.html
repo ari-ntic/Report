@@ -7752,3 +7752,14 @@ body{background-color:#f1f5f9!important}
   syncPhotoViewerViewport();window.addEventListener('resize',syncPhotoViewerViewport);if(window.visualViewport){window.visualViewport.addEventListener('resize',syncPhotoViewerViewport);window.visualViewport.addEventListener('scroll',syncPhotoViewerViewport);}
 })();
 </script>
+
+<style id="revision-mobile-photo-thumb-touch">
+@media (hover: none) and (pointer: coarse) {
+  /* Touch browsers can keep :hover on the last tapped thumbnail. Only the displayed photo stays blue. */
+  .photo-viewer-thumb-item:hover:not(.is-active) {
+    border-color: rgba(255,255,255,.2) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,.6) !important;
+  }
+  .photo-viewer-thumb-item:focus:not(.is-active) { outline: none !important; }
+}
+</style>
