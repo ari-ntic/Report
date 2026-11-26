@@ -7668,3 +7668,28 @@ body{background-color:#f1f5f9!important}
   window.closePackageManager=closeWithPhotoCleanup;
 })();
 </script>
+
+        
+<script id="revision-20261126-close-editor-photo-cleanly">
+(function(){
+ function clearEditorPhotoViewer(){
+  var viewer=document.getElementById("editorPhotoViewer");
+  if(!viewer)return;
+  viewer.hidden=true;
+  viewer.style.removeProperty("display");
+  viewer.removeAttribute("aria-hidden");
+  var image=viewer.querySelector("img");
+  if(image)image.removeAttribute("src");
+ }
+ var oldClose=window.closePackageManager;
+ if(typeof oldClose==="function"&&!oldClose.__clearsViewerState){
+  var close=function(){var busy=false;try{busy=!!packageBusy;}catch(e){}var result=oldClose.apply(this,arguments);if(!busy)clearEditorPhotoViewer();return result;};
+  close.__clearsViewerState=true;window.closePackageManager=close;
+ }
+ var oldSave=window.saveReportEditor;
+ if(typeof oldSave==="function"&&!oldSave.__clearsViewerState){
+  var save=async function(){var result=await oldSave.apply(this,arguments);if(packageEntry===null)clearEditorPhotoViewer();return result;};
+  save.__clearsViewerState=true;window.saveReportEditor=save;
+ }
+})();
+</script>
