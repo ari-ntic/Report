@@ -7571,3 +7571,59 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape')closeReportC
 
 
 <style>.activity-item-author{font-size:10px!important}.attention-item-date .attention-author{font-size:10px!important}.report-author-desktop,.report-author-mobile{font-size:10px!important;line-height:1.2!important}.photo-author{font-size:11px!important;line-height:1.2!important}.nationality-flag-icon{width:1.5em!important;height:1em!important;vertical-align:-.12em!important}</style>
+
+<style id="revision-20261126-final">
+/* Flags stay readable on white surfaces; the photo viewer keeps its clean borderless look. */
+.nationality-flag{display:inline-flex!important;vertical-align:middle!important;margin-inline-start:.28em!important;line-height:1!important}
+.nationality-flag-icon{width:1.5em!important;height:1em!important;vertical-align:-.12em!important;border:1px solid #cbd5e1!important;border-radius:2px!important;box-sizing:border-box!important}
+.photo-viewer-name .nationality-flag-icon{border:0!important}
+/* Keep the latest-photo author visible when desktop panels become narrow. */
+#photoGallery .photo-thumb{height:auto!important;min-width:0!important;align-self:start!important}
+#photoGallery .photo-thumb-caption{display:block!important;min-width:0!important;height:auto!important;max-height:none!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important;line-height:1.25!important}
+#photoGallery .photo-thumb-author{display:block!important;max-width:100%!important;height:auto!important;max-height:none!important;margin-top:2px!important;font-size:10px!important;line-height:1.2!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important}
+</style>
+<script>
+/* Translate only the visible urgency label; keep its Japanese value for filtering. */
+(function(){
+ function translateUrgencyBadges(){
+  document.querySelectorAll('#attentionList .attention-item-name.filter-trigger-badge').forEach(function(el){
+   if(!el.dataset.rawUrgency)el.dataset.rawUrgency=el.textContent.trim();
+   var raw=el.dataset.rawUrgency,english=currentLang==='en',shown=raw;
+   if(english){if(raw.indexOf('通常')>=0)shown='🟢 Normal';else if(raw.indexOf('注意')>=0)shown='🟡 Attention';else if(raw.indexOf('緊急')>=0)shown='🔴 Urgent';}
+   if(el.textContent.trim()!==shown)el.textContent=shown;
+   var title=english?'Filter reports by urgency':raw+'で絞り込む';
+   if(el.title!==title)el.title=title;
+  });
+ }
+ new MutationObserver(translateUrgencyBadges).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
+ document.addEventListener('click',function(){setTimeout(translateUrgencyBadges,0)},true);
+ document.addEventListener('DOMContentLoaded',translateUrgencyBadges);
+ setTimeout(translateUrgencyBadges,0);
+})();
+/* A report-list refresh keeps the existing rows on screen until new rows arrive. */
+(function(){
+ var originalLoadJurnalPage=loadJurnalPage;
+ loadJurnalPage=function(preserveSelection){
+  var modal=document.getElementById('reportsModalOverlay'),body=document.getElementById('recentTableBody');
+  var keep=preserveSelection===true&&modal&&modal.classList.contains('is-open')&&body;
+  var previous=keep?body.innerHTML:null,loadingText=(typeof i18n!=='undefined'&&i18n[currentLang]&&i18n[currentLang].loading)||'';
+  var result=originalLoadJurnalPage.apply(this,arguments);
+  if(keep){var cell=body.querySelector('td[colspan="4"]');if(cell&&loadingText&&cell.textContent.trim()===String(loadingText).trim())body.innerHTML=previous;}
+  return result;
+ };
+})();
+/* Save returns to the view that contained the editor. */
+(function(){
+ var originalSaveReportEditor=saveReportEditor;
+ saveReportEditor=async function(){
+  var reports=document.getElementById('reportsModalOverlay');
+  var editor=document.getElementById('packageManagerOverlay');
+  var openedFromReports=!!(reports&&reports.classList.contains('is-open')&&editor&&editor.classList.contains('is-open'));
+  await originalSaveReportEditor.apply(this,arguments);
+  if(packageEntry===null){
+   if(!openedFromReports&&reports){reports.classList.remove('is-open','report-detail-open');if(typeof syncReportsScrollLock==='function')syncReportsScrollLock();}
+   /* In the all-reports flow the existing modal stays open; loadJurnalPage updates its rows in place. */
+  }
+ };
+})();
+</script>
