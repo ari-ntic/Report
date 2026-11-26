@@ -7635,3 +7635,36 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape')closeReportC
 /* Keep the author at its original size and give its line enough vertical room. */
 #photoGallery .photo-thumb-author{display:block!important;color:#64748b!important;font-size:10px!important;line-height:1.4!important;min-height:1.4em!important;height:auto!important;max-height:none!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;padding-bottom:2px!important;box-sizing:content-box!important}
 </style>
+
+        
+
+<style id="revision-20261126-flags-soft-surfaces">
+/* Remove the outline from every flag; a soft page surface keeps white flag areas visible. */
+.nationality-flag-icon{border:0!important;border-radius:0!important;outline:0!important;box-shadow:none!important}
+:root{--bg-body:#f1f5f9;--card-bg:#f7f9fc}
+body{background-color:#f1f5f9!important}
+.card,.panel,.report-card,.report-list,.modal-content,.modal-box,.editor-modal,#reportsModalOverlay .modal-content,.photo-thumb,.photo-thumb-caption,#photoGallery .photo-thumb,#photoGallery .photo-thumb-caption,.gallery-photo-thumb,.gallery-photo-caption,.gallery-modal-box,.followup-item,.followup-card,.followup-item-orig-note{background-color:#f7f9fc!important}
+</style>
+<script id="revision-20261126-close-stale-editor-photo-viewer">
+(function(){
+  var originalClose=window.closePackageManager;
+  if(typeof originalClose!=="function"||originalClose.__clearsEditorPhotoViewer)return;
+  var closeWithPhotoCleanup=function(){
+    var wasBusy=false;
+    try{wasBusy=!!packageBusy;}catch(e){}
+    var result=originalClose.apply(this,arguments);
+    if(!wasBusy){
+      var viewer=document.getElementById("editorPhotoViewer");
+      if(viewer){
+        viewer.style.display="none";
+        viewer.setAttribute("aria-hidden","true");
+        var image=viewer.querySelector("img");
+        if(image)image.removeAttribute("src");
+      }
+    }
+    return result;
+  };
+  closeWithPhotoCleanup.__clearsEditorPhotoViewer=true;
+  window.closePackageManager=closeWithPhotoCleanup;
+})();
+</script>
