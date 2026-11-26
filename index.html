@@ -7618,7 +7618,7 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape')closeReportC
  saveReportEditor=async function(){
   var reports=document.getElementById('reportsModalOverlay');
   var editor=document.getElementById('packageManagerOverlay');
-  var openedFromReports=!!(reports&&reports.classList.contains('is-open')&&editor&&editor.classList.contains('is-open'));
+  var openedFromReports=!!(reports&&reports.classList.contains('is-open')&&editor&&reports.contains(editor));
   await originalSaveReportEditor.apply(this,arguments);
   if(packageEntry===null){
    if(!openedFromReports&&reports){reports.classList.remove('is-open','report-detail-open');if(typeof syncReportsScrollLock==='function')syncReportsScrollLock();}
