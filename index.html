@@ -2598,7 +2598,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
         <table style="width:100%; border-collapse:collapse; font-size:12px;">
           <thead>
             <tr>
-              <th class="summary-th-urgency" style="width:100px; white-space:nowrap;">緊急度 / 発生日</th>
+              <th class="summary-th-urgency" style="width:100px; white-space:nowrap;"></th>
               <th class="summary-th-name" style="width:180px;">氏名・所属企業</th>
               <th class="summary-th-category" style="width:90px; white-space:nowrap;">カテゴリ</th>
               <th class="summary-th-detail">報告内容</th>
@@ -2759,7 +2759,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
         <table>
           <thead>
             <tr>
-              <th id="thUrgency">緊急度 / 発生日</th>
+              <th id="thUrgency"></th>
               <th id="thNameComp">氏名・所属企業</th>
               <th id="thCategory">カテゴリ</th>
               <th id="thDetail">報告内容</th>
@@ -3176,7 +3176,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
     "pillUrgent": "🔴 緊急のみ",
     "pillWarning": "🟡 注意のみ",
     "pillNormal": "🟢 通常のみ",
-    "thUrgency": "緊急度 / 発生日",
+    "thUrgency": "",
     "thNameComp": "氏名・所属企業",
     "thCategory": "カテゴリ",
     "thDetail": "報告内容",
@@ -3282,7 +3282,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
     "pillUrgent": "🔴 Urgent Only",
     "pillWarning": "🟡 Attention Only",
     "pillNormal": "🟢 Normal Only",
-    "thUrgency": "Urgency / Event date",
+    "thUrgency": "緊急度・発生日",
     "thNameComp": "Name & Company",
     "thCategory": "Category",
     "thDetail": "Report details",
@@ -7784,3 +7784,8 @@ body{background-color:#f1f5f9!important}
   }
 })();
 </script>
+
+
+<style id="revision-report-table-header-align">
+#reportsSummaryPanel thead th, #reportsModalOverlay .table-wrapper thead th { text-align:center !important; vertical-align:middle !important; white-space:normal !important; overflow-wrap:anywhere !important; line-height:1.35 !important; }
+</style>
