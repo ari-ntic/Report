@@ -7627,3 +7627,11 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape')closeReportC
  };
 })();
 </script>
+
+        
+<style id="revision-20261126-photo-author-fix">
+/* Restore the photo caption to its original single-line appearance. */
+#photoGallery .photo-thumb-caption{display:block!important;font-size:9.5px!important;padding:2px 3px!important;color:#334155!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;text-align:center!important;background:#fff!important;line-height:1.25!important;flex-shrink:0!important}
+/* Keep the author at its original size and give its line enough vertical room. */
+#photoGallery .photo-thumb-author{display:block!important;color:#64748b!important;font-size:10px!important;line-height:1.4!important;min-height:1.4em!important;height:auto!important;max-height:none!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;padding-bottom:2px!important;box-sizing:content-box!important}
+</style>
