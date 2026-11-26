@@ -7724,3 +7724,31 @@ body{background-color:#f1f5f9!important}
   window.saveReportEditor=wrappedSave;
 })();
 </script>
+
+<style id="revision-photo-viewer-mobile-fit">
+@media (max-width: 768px) {
+  .photo-viewer-overlay { top: var(--photo-viewer-top, 0px) !important; bottom: auto !important; height: var(--photo-viewer-vh, 100vh) !important; }
+  .photo-viewer-box { height: 100% !important; min-height: 0 !important; padding-bottom: max(8px, env(safe-area-inset-bottom)) !important; }
+  .photo-viewer-frame { flex: 1 1 0 !important; min-height: 0 !important; }
+  .photo-viewer-info { flex: 0 0 auto !important; max-height: 24vh; overflow-y: auto; }
+  .photo-viewer-thumbs-deck { flex: 0 0 64px !important; height: 64px !important; padding-bottom: 6px !important; }
+}
+</style>
+<script id="revision-report-photo-viewer-parity">
+(function(){
+  function scopedPhotos(entry){
+    var urls=(entry.fotoUrls&&entry.fotoUrls.length)?entry.fotoUrls:(entry.fotoUrl?[entry.fotoUrl]:[]);
+    return urls.map(function(url){return {url:url,nama:entry.nama,nationality:entry.nationality||entry.kewarganegaraan||entry['国籍']||entry.negara,authorName:entry.authorName||entry.uploaderName,tanggal:entry.tanggal,kategori:entry.kategori,catatan:entry.catatan};});
+  }
+  window.openPhotoViewerForEntry=function(id){
+    var entries=(lastJurnalPageResult&&lastJurnalPageResult.entries)||[];var entry=entries.find(function(item){return String(item.id)===String(id);});if(!entry)return;var photos=scopedPhotos(entry);if(photos.length)openPhotoViewer(photos,0);
+  };
+  window.openPhotoViewerForActivityItem=function(id){
+    var list=(lastDashboardData&&lastDashboardData.latestActivity)||[];var entry=list.find(function(item){return String(item.id)===String(id);});if(!entry)return;var photos=scopedPhotos(entry);if(photos.length)openPhotoViewer(photos,0);
+  };
+})();
+(function(){
+  function syncPhotoViewerViewport(){var vv=window.visualViewport;var height=vv?vv.height:window.innerHeight;var top=vv?vv.offsetTop:0;document.documentElement.style.setProperty('--photo-viewer-vh',height+'px');document.documentElement.style.setProperty('--photo-viewer-top',top+'px');}
+  syncPhotoViewerViewport();window.addEventListener('resize',syncPhotoViewerViewport);if(window.visualViewport){window.visualViewport.addEventListener('resize',syncPhotoViewerViewport);window.visualViewport.addEventListener('scroll',syncPhotoViewerViewport);}
+})();
+</script>
