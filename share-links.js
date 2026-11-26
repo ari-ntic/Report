@@ -188,7 +188,9 @@
     if (result && result.success && result.photos && result.photos.length) {
       activePhotoRoute = { source: 'entry', pageNo: 1 };
       openPhotoViewer(result.photos, result.index || 0);
+      return true;
     }
+    return false;
   }
 
   function hook(name, replace) {
@@ -229,11 +231,49 @@
   }
 
   async function openReport(id) {
+    /* Validate the linked report first so a bad ID can fall back to the report list. */
+    const found = await menuRpc('getJournalPackage', id);
+    if (!found || found.success !== true) return false;
     openReportsModal(false);
     if (typeof window.openPackageManagerFromRoute !== 'function') {
       throw new Error('Report editor entry point unavailable');
     }
     await window.openPackageManagerFromRoute(id);
+    return !!packageLoaded;
+  }
+
+  function openReportsFallback(params, pageNo) {
+    applyFilters(params);
+    openReportsModal(false);
+    if (typeof currentPage !== 'undefined') currentPage = pageNo || 1;
+    loadJurnalPage(true);
+  }
+
+  function openPhotosFallback(pageNo) {
+    const overlay = document.getElementById('galleryModalOverlay');
+    const wasOpen = isOpen(overlay);
+    if (!wasOpen) {
+      changeMenuIntent();
+      overlay.classList.add('is-open');
+    }
+    const targetPage = Math.max(1, Math.min(9999, Number.parseInt(pageNo || '1', 10) || 1));
+    if (!wasOpen || galleryCurrentPage !== targetPage) {
+      galleryCurrentPage = targetPage;
+      loadGalleryPage(targetPage);
+    }
+  }
+
+  function fallbackForRoute(view, params, pageNo) {
+    if (view === 'report' || view === 'reports') {
+      openReportsFallback(params, pageNo);
+    } else if (view === 'photo' || view === 'photos') {
+      const photoPage = view === 'photo' && params.get('photoSource') === 'gallery'
+        ? params.get('photoPage') : pageNo;
+      openPhotosFallback(photoPage);
+    } else if (view === 'todo') {
+      openTodoModal();
+    }
+    /* Unknown route names stay on home; the final URL sync removes the bad route. */
   }
 
 
@@ -254,42 +294,46 @@
     applyingAddress = true;
     try {
       closeViewsForNavigation();
-      if (view === 'report' && id) {
+      if (view === 'report') {
         applyFilters(params);
-        if (pageNo > 1 && typeof currentPage !== 'undefined') currentPage = pageNo;
-        await openReport(id);
-      } else if (view === 'photo' && id) {
+        const opened = id ? await openReport(id) : false;
+        if (!opened) openReportsFallback(params, pageNo);
+      } else if (view === 'photo') {
+        let opened = false;
         const photoSource = params.get('photoSource') || 'entry';
-        if (photoSource === 'home') {
+        const photoPage = Math.max(1, Math.min(9999, Number.parseInt(params.get('photoPage') || '1', 10) || 1));
+        if (id && photoSource === 'home') {
           const dashboard = await waitForDashboardPhotos();
           const photos = photoViewerItems(dashboard && dashboard.latestPhotos);
           const index = photos.findIndex(photo => viewerPhotoFileId(photo.url) === id);
-          if (index >= 0) { activePhotoRoute = { source: 'home', pageNo: 1 }; openPhotoViewer(photos, index); }
-          else await openFocusedPhoto(id);
-        } else if (photoSource === 'gallery') {
-          const photoPage = Math.max(1, Math.min(9999, Number.parseInt(params.get('photoPage') || '1', 10) || 1));
-          document.getElementById('galleryModalOverlay').classList.add('is-open');
+          if (index >= 0) { activePhotoRoute = { source: 'home', pageNo: 1 }; openPhotoViewer(photos, index); opened = true; }
+        } else if (id && photoSource === 'gallery') {
           const gallery = await getPreparedGalleryPage(photoPage, 100, () => routeApplying);
           if (gallery && gallery.success !== false) {
             applyGalleryPageData(gallery);
             const photos = photoViewerItems(gallery.photos);
             const index = photos.findIndex(photo => viewerPhotoFileId(photo.url) === id);
-            if (index >= 0) { activePhotoRoute = { source: 'gallery', pageNo: photoPage }; openPhotoViewer(photos, index); }
-            else await openFocusedPhoto(id);
-          } else await openFocusedPhoto(id);
-        } else { await openFocusedPhoto(id); }
+            if (index >= 0) { activePhotoRoute = { source: 'gallery', pageNo: photoPage }; openPhotoViewer(photos, index); opened = true; }
+          }
+        }
+        if (id && !opened) opened = await openFocusedPhoto(id);
+        if (!opened) openPhotosFallback(photoSource === 'gallery' ? photoPage : 1);
       } else if (view === 'reports') {
         applyFilters(params);
         openReportsModal(false);
         if (typeof currentPage !== 'undefined') currentPage = pageNo;
         loadJurnalPage(true);
       } else if (view === 'photos') {
-        openGalleryModal();
-        if (pageNo > 1) { galleryCurrentPage = pageNo; loadGalleryPage(pageNo); }
-      } else if (view === 'todo') openTodoModal();
+        openPhotosFallback(pageNo);
+      } else if (view === 'todo') {
+        openTodoModal();
+      }
       if (view && view !== 'home') restoredModalRoute = true;
     } catch (error) {
       console.error('Could not open address-linked view:', error);
+      /* Keep the user in the closest useful section if the deep link cannot open. */
+      try { fallbackForRoute(view, params, pageNo); } catch (fallbackError) { console.error('Could not open fallback view:', fallbackError); }
+      if (view && view !== 'home') restoredModalRoute = true;
     } finally {
       window.setTimeout(() => {
         applyingAddress = false;
