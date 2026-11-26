@@ -3283,7 +3283,7 @@ input[type="checkbox"], input[type="file"], select, button:not(:disabled), a[hre
     "pillWarning": "🟡 Attention Only",
     "pillNormal": "🟢 Normal Only",
     "thUrgency": "Urgency · Date",
-    "thNameComp": "Name & Company",
+    "thNameComp": "Name · Company",
     "thCategory": "Category",
     "thDetail": "Report details",
     "msgNotDetected": "(Not Detected)",
@@ -7793,5 +7793,11 @@ body{background-color:#f1f5f9!important}
 <style id="revision-mobile-urgency-header">
 @media (max-width:600px) {
   #reportsSummaryPanel .summary-th-urgency, #reportsModalOverlay .table-wrapper thead th:first-child { white-space:nowrap !important; font-size:10px !important; padding-left:4px !important; padding-right:4px !important; }
+}
+</style>
+
+<style id="revision-mobile-name-company-header">
+@media (max-width:600px) {
+  #reportsSummaryPanel .summary-th-name, #reportsModalOverlay .table-wrapper thead th:nth-child(2) { white-space:nowrap !important; }
 }
 </style>
